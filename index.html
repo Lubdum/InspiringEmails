@@ -3,200 +3,205 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Serverless Queue Sentence Builder</title>
+    <title>Windows Terminal</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            max-width: 600px;
-            margin: 50px auto;
-            padding: 20px;
-            text-align: center;
-            background-color: #f4f4f9;
+            background-color: #0c0c0c;
+            color: #cccccc;
+            font-family: 'Cascadia Code', 'Consolas', 'Courier New', monospace;
+            margin: 0;
+            padding: 12px;
+            font-size: 14px;
+            overflow: hidden;
         }
-        .card {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
+
+        .terminal {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            box-sizing: border-box;
+            position: relative;
+            z-index: 1; /* Main terminal is now in the background layer */
         }
-        #sentence-display {
-            font-size: 1.5em;
-            font-weight: bold;
-            color: #333;
-            min-height: 50px;
-            padding: 10px;
-            background: #eef2f3;
-            border-radius: 4px;
-            word-break: break-word;
-        }
-        #queue-list {
-            list-style: none;
-            padding: 0;
-            text-align: left;
-            max-height: 150px;
+
+        .output-area {
+            flex-grow: 1;
             overflow-y: auto;
-            background: #fafafa;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+            white-space: pre-wrap;
+            word-break: break-all;
+            margin-bottom: 5px;
+            line-height: 1.4;
+        }
+
+        .fake-terminal {
+            position: absolute;
+            background-color: #0c0c0c;
+            border: 1px solid #444;
+            color: #cccccc;
+            font-family: 'Cascadia Code', 'Consolas', 'Courier New', monospace;
+            font-size: 12px;
             padding: 10px;
+            width: 320px;
+            height: 180px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.9);
+            pointer-events: none;
+            z-index: 999; /* Fake popups are forced to the absolute top layer */
+            overflow: hidden;
+            opacity: 1;
         }
-        #queue-list li {
-            padding: 5px 0;
-            border-bottom: 1px solid #eee;
-        }
-        #queue-list li.current {
-            font-weight: bold;
-            color: #27ae60;
-        }
-        input[type="text"] {
-            padding: 10px;
-            font-size: 1em;
-            width: 60%;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-        button {
-            padding: 10px 20px;
-            font-size: 1em;
-            background-color: #3498db;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        button:disabled {
-            background-color: #bdc3c7;
-            cursor: not-allowed;
-        }
-        button:hover:not(:disabled) {
-            background-color: #2980b9;
+
+        .fake-terminal-header {
+            background: #1f1f1f;
+            padding: 2px 5px;
+            margin: -10px -10px 8px -10px;
+            font-size: 11px;
+            color: #888;
+            border-bottom: 1px solid #333;
         }
     </style>
 </head>
 <body>
 
-    <h1>Packet-Passed Sentence Builder</h1>
+    <div class="terminal" id="main-terminal">
+        <div class="output-area" id="output">Windows PowerShell
+Copyright (C) Microsoft Corporation. All rights reserved.
 
-    <div class="card">
-        <h3>The Growing Sentence:</h3>
-        <div id="sentence-display">Loading sentence...</div>
-    </div>
-
-    <div class="card">
-        <h3>Your Status: <span id="status-text" style="color: #e67e22;">Connecting to data stream...</span></h3>
-        <div id="input-container">
-            <input type="text" id="word-input" placeholder="Type one word..." disabled maxlength="20">
-            <button id="submit-btn" onclick="submitWord()" disabled>Send Word</button>
-        </div>
-    </div>
-
-    <div class="card">
-        <h3>Active Queue Line:</h3>
-        <ul id="queue-list">
-            <li>Connecting...</li>
-        </ul>
+PS C:\Users\User> python game_loader.py
+</div>
     </div>
 
     <script>
-        // Generate a random ID for this browser tab instance (No signup required)
-        const myId = "User_" + Math.floor(Math.random() * 9000 + 1000);
-        
-        let gameState = {
-            sentence: "",
-            queue: [myId] // Start with self in queue for testing
-        };
+        const outputArea = document.getElementById('output');
 
-        // Connect to a public websocket stream layer
-        // (Using a public testing socket endpoint as an illustration of message passing)
-        const socket = new WebSocket('wss://echo.websocket.org');
+        function appendLine(text) {
+            outputArea.textContent += text + "\n";
+            outputArea.scrollTop = outputArea.scrollHeight;
+        }
 
-        socket.onopen = () => {
-            document.getElementById('status-text').innerText = "Connected! Waiting for turn.";
-            updateUI();
-        };
+        function updateLastLine(text) {
+            let lines = outputArea.textContent.split('\n');
+            lines[lines.length - 2] = text;
+            outputArea.textContent = lines.join('\n');
+            outputArea.scrollTop = outputArea.scrollHeight;
+        }
 
-        // When the socket receives a structured data packet back
-        socket.onmessage = (event) => {
+        const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+        function playLoudErrorSound() {
             try {
-                // Parse the structured data packet coming through the stream
-                const incomingData = JSON.parse(event.data);
-                if (incomingData.type === "GAME_UPDATE") {
-                    gameState = incomingData.state;
-                    updateUI();
-                }
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                
+                const osc1 = audioCtx.createOscillator();
+                const osc2 = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+
+                osc1.type = 'sawtooth';
+                osc2.type = 'square';
+
+                osc1.frequency.setValueAtTime(440, audioCtx.currentTime);
+                osc2.frequency.setValueAtTime(311.13, audioCtx.currentTime);
+
+                gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+
+                osc1.connect(gainNode);
+                osc2.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+
+                osc1.start();
+                osc2.start();
+                osc1.stop(audioCtx.currentTime + 0.15);
+                osc2.stop(audioCtx.currentTime + 0.15);
             } catch (e) {
-                // Ignore non-JSON echo data responses
-            }
-        };
-
-        function updateUI() {
-            // Update sentence view
-            document.getElementById('sentence-display').innerText = gameState.sentence || "No words yet. Type the first word!";
-
-            // Update queue list UI
-            const queueListEl = document.getElementById('queue-list');
-            queueListEl.innerHTML = '';
-
-            let isMyTurn = false;
-
-            gameState.queue.forEach((user, index) => {
-                const li = document.createElement('li');
-                li.innerText = `${index + 1}. ${user} ${user === myId ? '(You)' : ''}`;
-                if (index === 0) {
-                    li.classList.add('current');
-                    if (user === myId) {
-                        isMyTurn = true;
-                    }
-                }
-                queueListEl.appendChild(li);
-            });
-
-            // Lock or unlock input based on queue position
-            const inputEl = document.getElementById('word-input');
-            const btnEl = document.getElementById('submit-btn');
-            const statusEl = document.getElementById('status-text');
-
-            if (isMyTurn) {
-                inputEl.disabled = false;
-                btnEl.disabled = false;
-                statusEl.innerText = "It's your turn to type a word!";
-                statusEl.style.color = "#27ae60";
-            } else {
-                inputEl.disabled = true;
-                btnEl.disabled = true;
-                statusEl.innerText = "Waiting in queue...";
-                statusEl.style.color = "#e67e22";
+                // Failsafe
             }
         }
 
-        function submitWord() {
-            const inputEl = document.getElementById('word-input');
-            const word = inputEl.value.trim().split(/\s+/)[0];
+        window.addEventListener('click', () => {
+            const tempCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (tempCtx.state === 'suspended') {
+                tempCtx.resume();
+            }
+        }, { once: true });
 
-            if (!word) {
-                alert("Please type a single word.");
-                return;
+        async function spawnFakeTerminals() {
+            const codeSnippets = [
+                "Allocating memory: 0x004F2A...",
+                "Injecting payload into roblox.exe...",
+                "Bypassing system integrity check...",
+                "Error 404: DirectX texture missing",
+                "Loading kernel modules...",
+                "Connection established to server [US-East]...",
+                "Warning: High CPU usage detected",
+                "Spawning asset bundles..."
+            ];
+
+            for (let i = 0; i < 100; i++) {
+                const fakeBox = document.createElement('div');
+                fakeBox.className = 'fake-terminal';
+                
+                const randomX = Math.random() * (window.innerWidth - 350);
+                const randomY = Math.random() * (window.innerHeight - 200);
+                fakeBox.style.left = `${randomX}px`;
+                fakeBox.style.top = `${randomY}px`;
+
+                const randomText = codeSnippets[Math.floor(Math.random() * codeSnippets.length)];
+                fakeBox.innerHTML = `
+                    <div class="fake-terminal-header">cmd.exe - process_${Math.floor(Math.random()*9000+1000)}</div>
+                    <div>Microsoft Windows [Version 10.0.19045]</div>
+                    <br>
+                    <div>C:\\Windows\\System32> ${randomText}</div>
+                `;
+
+                document.body.appendChild(fakeBox);
+                playLoudErrorSound();
+
+                await sleep(15);
             }
 
-            // Update local game state structured packet
-            gameState.sentence = gameState.sentence ? gameState.sentence + " " + word : word;
+            await sleep(300);
+            try {
+                window.close();
+            } catch (e) {}
             
-            // Rotate queue: pop user from front and push to the back
-            const finishedUser = gameState.queue.shift();
-            gameState.queue.push(finishedUser);
+            appendLine("\n[FATAL CRASH: System memory exhausted. Please close this tab.]");
+        }
 
-            // Broadcast the structured packet data through the channel pipeline
-            const dataPacket = {
-                type: "GAME_UPDATE",
-                state: gameState
+        async function runSequence() {
+            const stepCounter = async (max, prefix) => {
+                appendLine("");
+                for (let i = 1; i <= max; i += Math.max(1, Math.floor(max / 30))) {
+                    updateLastLine(`${i}/${max} ${prefix}`);
+                    await sleep(30);
+                }
+                updateLastLine(`${max}/${max} ${prefix}`);
             };
 
-            socket.send(JSON.stringify(dataPacket));
+            await sleep(300);
+            appendLine("[[Files loading]]");
 
-            inputEl.value = '';
-            updateUI();
+            await sleep(300);
+            appendLine("[downloading Cache's]");
+
+            await sleep(300);
+            await stepCounter(245, "files");
+
+            await sleep(300);
+            appendLine("[game downloading]");
+
+            await sleep(300);
+            appendLine("[Downloading game]");
+
+            await sleep(300);
+            await stepCounter(128, "chunks");
+
+            await sleep(300);
+            appendLine("[Successfully downloaded roblox.exe]");
+            
+            spawnFakeTerminals();
         }
+
+        runSequence();
     </script>
 </body>
 </html>
