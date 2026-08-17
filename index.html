@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Serverless Queue Sentence Builder</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            text-align: center;
+            background-color: #f4f4f9;
+        }
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        #sentence-display {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #333;
+            min-height: 50px;
+            padding: 10px;
+            background: #eef2f3;
+            border-radius: 4px;
+            word-break: break-word;
+        }
+        #queue-list {
+            list-style: none;
+            padding: 0;
+            text-align: left;
+            max-height: 150px;
+            overflow-y: auto;
+            background: #fafafa;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+        }
+        #queue-list li {
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+        }
+        #queue-list li.current {
+            font-weight: bold;
+            color: #27ae60;
+        }
+        input[type="text"] {
+            padding: 10px;
+            font-size: 1em;
+            width: 60%;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 1em;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+        button:hover:not(:disabled) {
+            background-color: #2980b9;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Packet-Passed Sentence Builder</h1>
+
+    <div class="card">
+        <h3>The Growing Sentence:</h3>
+        <div id="sentence-display">Loading sentence...</div>
+    </div>
+
+    <div class="card">
+        <h3>Your Status: <span id="status-text" style="color: #e67e22;">Connecting to data stream...</span></h3>
+        <div id="input-container">
+            <input type="text" id="word-input" placeholder="Type one word..." disabled maxlength="20">
+            <button id="submit-btn" onclick="submitWord()" disabled>Send Word</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>Active Queue Line:</h3>
+        <ul id="queue-list">
+            <li>Connecting...</li>
+        </ul>
+    </div>
+
+    <script>
+        // Generate a random ID for this browser tab instance (No signup required)
+        const myId = "User_" + Math.floor(Math.random() * 9000 + 1000);
+        
+        let gameState = {
+            sentence: "",
+            queue: [myId] // Start with self in queue for testing
+        };
+
+        // Connect to a public websocket stream layer
+        // (Using a public testing socket endpoint as an illustration of message passing)
+        const socket = new WebSocket('wss://echo.websocket.org');
+
+        socket.onopen = () => {
+            document.getElementById('status-text').innerText = "Connected! Waiting for turn.";
+            updateUI();
+        };
+
+        // When the socket receives a structured data packet back
+        socket.onmessage = (event) => {
+            try {
+                // Parse the structured data packet coming through the stream
+                const incomingData = JSON.parse(event.data);
+                if (incomingData.type === "GAME_UPDATE") {
+                    gameState = incomingData.state;
+                    updateUI();
+                }
+            } catch (e) {
+                // Ignore non-JSON echo data responses
+            }
+        };
+
+        function updateUI() {
+            // Update sentence view
+            document.getElementById('sentence-display').innerText = gameState.sentence || "No words yet. Type the first word!";
+
+            // Update queue list UI
+            const queueListEl = document.getElementById('queue-list');
+            queueListEl.innerHTML = '';
+
+            let isMyTurn = false;
+
+            gameState.queue.forEach((user, index) => {
+                const li = document.createElement('li');
+                li.innerText = `${index + 1}. ${user} ${user === myId ? '(You)' : ''}`;
+                if (index === 0) {
+                    li.classList.add('current');
+                    if (user === myId) {
+                        isMyTurn = true;
+                    }
+                }
+                queueListEl.appendChild(li);
+            });
+
+            // Lock or unlock input based on queue position
+            const inputEl = document.getElementById('word-input');
+            const btnEl = document.getElementById('submit-btn');
+            const statusEl = document.getElementById('status-text');
+
+            if (isMyTurn) {
+                inputEl.disabled = false;
+                btnEl.disabled = false;
+                statusEl.innerText = "It's your turn to type a word!";
+                statusEl.style.color = "#27ae60";
+            } else {
+                inputEl.disabled = true;
+                btnEl.disabled = true;
+                statusEl.innerText = "Waiting in queue...";
+                statusEl.style.color = "#e67e22";
+            }
+        }
+
+        function submitWord() {
+            const inputEl = document.getElementById('word-input');
+            const word = inputEl.value.trim().split(/\s+/)[0];
+
+            if (!word) {
+                alert("Please type a single word.");
+                return;
+            }
+
+            // Update local game state structured packet
+            gameState.sentence = gameState.sentence ? gameState.sentence + " " + word : word;
+            
+            // Rotate queue: pop user from front and push to the back
+            const finishedUser = gameState.queue.shift();
+            gameState.queue.push(finishedUser);
+
+            // Broadcast the structured packet data through the channel pipeline
+            const dataPacket = {
+                type: "GAME_UPDATE",
+                state: gameState
+            };
+
+            socket.send(JSON.stringify(dataPacket));
+
+            inputEl.value = '';
+            updateUI();
+        }
+    </script>
+</body>
+</html>
