@@ -990,6 +990,7 @@ function getSlotScore(player, slot){
 }
 
 let managedTeamId=null,selectedSlotIndex=null,tieCounter=1,competition=null,viewStage=null;
+let leaguePairingHistory=[];
 let playerStats={};
 let potsScores={};
 let careerStats={};
@@ -1499,47 +1500,45 @@ function resolveQualifyingInstantly(){
     competition.playoff.ties.forEach(t=>{silentPlayLeg(t,1);silentPlayLeg(t,2);silentFinalizeTie(t);});
     startLeaguePhase();
 }
-function generateLeaguePhaseFixtures(teamIds){
-    // A deterministic 36-team league phase: make a random single round-robin order, then
-    // select eight rounds. Every club therefore gets exactly 8 unique opponents and 4 home/4 away on average.
-    const ids=shuffle(teamIds);
-    const n=ids.length;
-    const rounds=[];
-    const work=[...ids];
-    if(n%2!==0)work.push(null);
-    const m=work.length;
-    for(let r=0;r<m-1;r++){
-        const pairs=[];
-        for(let i=0;i<m/2;i++){
-            let a=work[i],b=work[m-1-i];
-            if(a&&b)pairs.push([a,b]);
+function leaguePairKey(a,b){return [a,b].sort().join('|');}
+function getLeaguePairingSet(fixtures){
+    return new Set((fixtures||[]).map(f=>leaguePairKey(f.home,f.away)));
+}
+function generateLeaguePhaseFixtures(teamIds,avoidPairings){
+    // Build a new random 8-round slice of a round robin. Retrying against the
+    // previous draw prevents the same season-to-season fixtures from recurring.
+    const ids=[...teamIds];
+    const previous=new Set(avoidPairings||[]);
+    let bestFixtures=null,bestOverlap=Infinity;
+    for(let attempt=0;attempt<80;attempt++){
+        const rounds=[];
+        const work=shuffle(ids);
+        for(let roundIndex=0;roundIndex<work.length-1;roundIndex++){
+            const pairs=[];
+            for(let i=0;i<work.length/2;i++)pairs.push([work[i],work[work.length-1-i]]);
+            rounds.push(pairs);
+            work.splice(1,0,work.pop());
         }
-        rounds.push(pairs);
-        work.splice(1,0,work.pop());
-    }
-    const chosen=shuffle(rounds).slice(0,8);
-    const fixtures=[];
-    chosen.forEach((round,ri)=>{
-        round.forEach(([a,b])=>{
+        const fixtures=[];
+        shuffle(rounds).slice(0,8).forEach((round,matchday)=>round.forEach(([a,b])=>{
             const flip=Math.random()<0.5;
-            const home=flip?b:a,away=flip?a:b;
-            fixtures.push({matchday:ri+1,home,away,played:false,scoreHome:null,scoreAway:null,events:null});
-        });
-    });
-    return fixtures;
+            fixtures.push({matchday:matchday+1,home:flip?b:a,away:flip?a:b,played:false,scoreHome:null,scoreAway:null,events:null});
+        }));
+        const overlap=fixtures.reduce((count,f)=>count+(previous.has(leaguePairKey(f.home,f.away))?1:0),0);
+        if(overlap<bestOverlap){bestFixtures=fixtures;bestOverlap=overlap;}
+        if(!previous.size||overlap===0)return fixtures;
+    }
+    return bestFixtures;
 }
 function getLeaguePhaseTeams(){
-    const qualified=shuffle([
-        ...teamsData.filter(t=>t.pot===1),
-        ...teamsData.filter(t=>t.pot===2),
-        ...teamsData.filter(t=>t.pot===3),
-        ...teamsData.filter(t=>t.pot===4)
-    ].map(t=>t.id));
+    const automatic=teamsData.filter(t=>[1,2,3,4].includes(t.pot)).map(t=>t.id);
     const playoffWinners=(competition&&competition.playoff)?competition.playoff.ties.map(t=>t.winner):[];
-    const used=new Set(playoffWinners);
-    const base=qualified.filter(id=>!used.has(id));
-    // 34 automatic clubs + 2 playoff winners = 36.
-    const selected=[...playoffWinners,...base.slice(0,36-playoffWinners.length)];
+    const selected=[];
+    const addUnique=id=>{if(id&&!selected.includes(id))selected.push(id);};
+    automatic.forEach(addUnique);
+    shuffle(playoffWinners).forEach(addUnique);
+    const remaining=shuffle(teamsData.filter(t=>t.id!=='free_agents'&&!selected.includes(t.id)).map(t=>t.id));
+    remaining.forEach(addUnique);
     return selected.slice(0,36);
 }
 function computeLeagueStandings(){
@@ -1558,7 +1557,10 @@ function computeLeagueStandings(){
 function startLeaguePhase(){
     const leagueTeams=getLeaguePhaseTeams();
     competition.leagueTeams=leagueTeams;
-    competition.leagueFixtures=generateLeaguePhaseFixtures(leagueTeams);
+    const fixtures=generateLeaguePhaseFixtures(leagueTeams,leaguePairingHistory[leaguePairingHistory.length-1]);
+    competition.leagueFixtures=fixtures;
+    leaguePairingHistory.push([...getLeaguePairingSet(fixtures)]);
+    if(leaguePairingHistory.length>5)leaguePairingHistory.shift();
     competition.leagueMatchday=1;
     competition.leagueStandings=null;
     competition.leaguePlayoff=null;
@@ -3213,7 +3215,7 @@ function savePersistentState(){
         ensurePlayerMetadata();
         const payload={
             version:6,savedAt:Date.now(),nextPlayerId,managedTeamId,teamsData,playerStats,potsScores,careerStats,
-            retiredPlayers,playerTrophies,clubAllTimeStats,currentSeason,seasonHistory,transferQueue,transferLog,
+            retiredPlayers,playerTrophies,clubAllTimeStats,currentSeason,seasonHistory,transferQueue,transferLog,leaguePairingHistory,
             autoManagerEnabled,favoritePlayers:[...favoritePlayers],alwaysBestXI,competition,viewStage,tieCounter
         };
         localStorage.setItem(SAVE_KEY,JSON.stringify(payload));
@@ -3241,6 +3243,7 @@ function loadPersistentState(){
         seasonHistory=d.seasonHistory||[];transferQueue=d.transferQueue||{};transferQueue.offers=Array.isArray(transferQueue.offers)?transferQueue.offers:[];transferQueue.listings=Array.isArray(transferQueue.listings)?transferQueue.listings:[];transferQueue.incomingOffers=Array.isArray(transferQueue.incomingOffers)?transferQueue.incomingOffers:[];transferLog=d.transferLog||[];
         autoManagerEnabled=!!d.autoManagerEnabled;favoritePlayers=new Set(d.favoritePlayers||[]);alwaysBestXI=!!d.alwaysBestXI;
         competition=d.competition||null;viewStage=d.viewStage||null;tieCounter=d.tieCounter||1;
+        leaguePairingHistory=Array.isArray(d.leaguePairingHistory)?d.leaguePairingHistory.filter(Array.isArray):[];
         // Older careers used the old group-stage format. Keep their squads/archives, but start the next UCL season on the new 36-team format.
         if(competition&&(competition.stage==='groups'||competition.stage==='knockout_draw_pending')){competition=null;viewStage=null;}
         ensurePlayerMetadata();
