@@ -162,11 +162,25 @@ tr:hover{background:rgba(255,255,255,.03);}
 </head>
 <body>
 
-<div id="team-select-screen" class="team-select-screen">
+<div id="startup-screen" class="team-select-screen">
+    <header><h1>⚽ UCL <span>Manager</span></h1></header>
+    <div class="panel" style="max-width:760px;margin:0 auto;text-align:center;">
+        <div style="font-size:3rem;margin-bottom:8px;">🏆</div>
+        <h2 style="font-size:1.8rem;">Welcome to UCL Manager</h2>
+        <p style="color:var(--text-muted);font-size:.9rem;max-width:600px;margin:8px auto 22px;">Start a completely new football world or continue your existing career. Your save will <strong>never load automatically</strong>.</p>
+        <div id="save-status" style="margin:0 auto 18px;padding:12px;border:1px solid var(--border-color);border-radius:10px;color:var(--text-muted);background:var(--panel-bg-2);">Checking for saved career...</div>
+        <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;">
+            <button id="continue-save-btn" class="btn btn-gold" onclick="continueSavedCareer()" style="min-width:190px;">▶ Continue Career</button>
+            <button class="btn btn-ghost" onclick="startNewCareer()" style="min-width:190px;">＋ New Career</button>
+        </div>
+    </div>
+</div>
+
+<div id="team-select-screen" class="team-select-screen" style="display:none;">
     <header><h1>⚽ UCL <span>Manager</span></h1></header>
     <div class="panel">
         <h2>Choose your club</h2>
-        <p style="color:var(--text-muted);font-size:.85rem;margin-top:-4px;">64 clubs. 32 challengers fight through qualifying to face the 8 established clubs defending their group-stage place. 24 more are seeded straight into the groups. Then it's group stage, two-legged knockouts, and a final.</p>
+        <p style="color:var(--text-muted);font-size:.85rem;margin-top:-4px;">64 clubs. Qualifying decides the final places, then the modern 36-team Champions League league phase: every club plays 8 different opponents. Top 8 go straight to the Round of 16, places 9-24 enter a knockout play-off, and 25-36 are eliminated.</p>
         <div id="pot-blocks"></div>
     </div>
 </div>
@@ -186,6 +200,7 @@ tr:hover{background:rgba(255,255,255,.03);}
             <button class="tab-btn" onclick="switchTab('transfers',event)">Transfers</button>
             <button class="tab-btn" onclick="switchTab('leaderboard',event)">Stats & History</button>
             <button class="tab-btn" onclick="switchTab('search',event)">Search Player</button>
+            <button class="tab-btn" onclick="switchTab('scouting',event)">Scouting</button>
             <button class="tab-btn" onclick="confirmChangeTeam()">Change Club</button>
         </div>
     </header>
@@ -224,7 +239,7 @@ tr:hover{background:rgba(255,255,255,.03);}
                 <h2>Squad (22-man roster)</h2>
                 <div style="max-height:460px;overflow-y:auto;">
                     <table>
-                        <thead><tr><th>Pos</th><th>Name</th><th>Age</th><th>OVR</th><th>POT</th><th>Value</th><th></th></tr></thead>
+                        <thead><tr><th>Pos</th><th>Name</th><th>Age</th><th>OVR</th><th>POT</th><th>Match Strength</th><th>Value</th><th></th></tr></thead>
                         <tbody id="roster-table"></tbody>
                     </table>
                 </div>
@@ -264,6 +279,7 @@ tr:hover{background:rgba(255,255,255,.03);}
         <div class="round-nav" id="transfers-subnav">
             <button class="active" onclick="switchTransfersView('market',event)">Player Market</button>
             <button onclick="switchTransfersView('manager',event)">Player Manager</button>
+            <button onclick="switchTransfersView('offers',event)">Offers <span id="incoming-offer-count"></span></button>
         </div>
         <div id="transfers-market-view">
             <div class="grid-2">
@@ -308,6 +324,13 @@ tr:hover{background:rgba(255,255,255,.03);}
                 </div>
             </div>
         </div>
+        <div id="transfers-offers-view" style="display:none;">
+            <div class="panel">
+                <h2>Offers for Your Players</h2>
+                <p style="color:var(--text-muted);font-size:.8rem;margin-top:-6px;">Other clubs may bid for players in your squad during the season. Accepting an offer sells the player immediately.</p>
+                <div id="incoming-offers-list"></div>
+            </div>
+        </div>
     </div>
 
     <div id="tab-leaderboard" class="tab-content">
@@ -320,6 +343,31 @@ tr:hover{background:rgba(255,255,255,.03);}
         <div class="panel" id="champion-lineup-panel" style="display:none;">
             <h2>Champion's Starting XI</h2>
             <table class="lb-table"><thead><tr><th>Pos</th><th>Player</th><th>OVR</th><th>Goals</th><th>Assists</th></tr></thead><tbody id="champion-lineup-table"></tbody></table>
+        </div>
+        <div class="panel" style="margin-bottom:18px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+                <div>
+                    <h2 style="margin-bottom:4px;">Club History</h2>
+                    <p style="color:var(--text-muted);font-size:.78rem;margin:0;">All-time Champions League records across your entire career world.</p>
+                </div>
+                <button class="btn btn-ghost btn-sm" onclick="toggleClubHistory()">View Every Team</button>
+            </div>
+            <div id="club-history-panel" style="display:none;margin-top:12px;">
+                <div class="filters-row">
+                    <input type="text" id="club-history-search" placeholder="Search club..." oninput="renderClubHistory()" style="flex:1;min-width:180px;">
+                    <select id="club-history-sort" onchange="renderClubHistory()">
+                        <option value="titles">UCLs Won</option>
+                        <option value="goals">UCL Goals</option>
+                        <option value="finals">Finals Made</option>
+                        <option value="lost">Finals Lost</option>
+                        <option value="appearances">Seasons</option>
+                    </select>
+                </div>
+                <div style="max-height:520px;overflow-y:auto;">
+                    <table class="lb-table"><thead><tr><th>#</th><th>Club</th><th>UCLs Won</th><th>UCL Goals</th><th>Finals</th><th>Finals Lost</th><th>Seasons</th></tr></thead>
+                    <tbody id="club-history-table"></tbody></table>
+                </div>
+            </div>
         </div>
         <div class="grid-2">
             <div class="panel">
@@ -348,6 +396,18 @@ tr:hover{background:rgba(255,255,255,.03);}
                 </div>
             </div>
             <div class="panel" id="player-profile-panel" style="display:none;"></div>
+        </div>
+    </div>
+
+    <div id="tab-scouting" class="tab-content">
+        <div class="panel">
+            <h2>Scouting Network</h2>
+            <p style="color:var(--text-muted);font-size:.82rem;margin-top:-6px;">Young players identified as having room to develop. Reports show an uncertain potential range rather than a guaranteed ceiling.</p>
+            <div id="scouting-note" style="font-size:.76rem;color:var(--text-muted);margin-bottom:10px;"></div>
+            <div style="max-height:560px;overflow-y:auto;">
+                <table><thead><tr><th>Player</th><th>Club</th><th>Pos</th><th>Age</th><th>OVR</th><th>Scout Projection</th><th>Asking Price</th></tr></thead>
+                <tbody id="scouting-table"></tbody></table>
+            </div>
         </div>
     </div>
 </div>
@@ -437,10 +497,114 @@ function computePlayerValue(p,team){
     const starMult=p.isStar?1.15:1.0;
     return Math.max(0.3,Math.round(base*posMult*ageMult*clubMult*starMult*10)/10);
 }
+// ==================== DYNAMIC PLAYER FORM / MATCH STRENGTH ====================
+function ensurePlayerPerformanceData(p){
+    if(!p)return;
+    if(p.matchStrength===undefined)p.matchStrength=clampNum(Math.round((p.ovr||60)+(p.age<=21?randInt(-7,4):p.age>=27?randInt(-3,3):randInt(-5,5))),45,99);
+    if(p.consistency===undefined){
+        const exp=p.experience!==undefined?p.experience:Math.max(0,Math.min(100,((p.age||18)-16)*6));
+        p.consistency=Math.round(clampNum(48+exp*.38+(p.age>=24?8:0),45,94));
+    }
+    if(p.experience===undefined)p.experience=Math.round(clampNum(((p.age||18)-16)*7,0,100));
+    if(!Array.isArray(p.matchRatings))p.matchRatings=[];
+    if(!Array.isArray(p.matchStrengthHistory))p.matchStrengthHistory=[];
+    if(!p.seasonGoals)p.seasonGoals=0;
+    if(!p.seasonAssists)p.seasonAssists=0;
+    if(!p.careerMatches)p.careerMatches=0;
+    if(!p.careerMatchRating)p.careerMatchRating=0;
+    if(!p.starScore)p.starScore=0;
+}
+function rollMatchStrength(p,importance=1){
+    ensurePlayerPerformanceData(p);
+    const base=p.ovr||60;
+    const experienceFactor=(p.experience||0)/100;
+    const consistency=(p.consistency||55)/100;
+    const form=((p.seasonForm===undefined?50:p.seasonForm)-50)*0.10;
+    const pressure=(importance-1)*2;
+    // Younger players swing harder; experienced players stay closer to their ability.
+    const swing=Math.max(2,Math.round(13-(consistency*7)));
+    const variance=randInt(-swing,swing);
+    let strength=Math.round(base + variance + form + experienceFactor*2 + pressure);
+    // A player's OVR is not a prison: exceptional matches can exceed it, but only modestly.
+    strength=clampNum(strength,Math.max(45,base-18),Math.min(99,base+12));
+    p.matchStrength=strength;
+    p.matchStrengthHistory.push({season:currentSeason||1,strength});
+    if(p.matchStrengthHistory.length>80)p.matchStrengthHistory.shift();
+    return strength;
+}
+function getPlayerMatchStrength(p){return p&&p.matchStrength!==undefined?p.matchStrength:(p?p.ovr||60:60);}
+function applyMatchPerformance(team,events,importance=1){
+    if(!team||!team.squad)return;
+    const starters=team.squad.slice(0,11);
+    starters.forEach(p=>ensurePlayerPerformanceData(p));
+    const eventList=events||[];
+    const byId={};eventList.forEach(e=>{if(e.playerId)byId[e.playerId]=(byId[e.playerId]||0)+1;if(e.assistId)byId[e.assistId]=(byId[e.assistId]||0)+0.6;});
+    starters.forEach(p=>{
+        const contribution=byId[p.id]||0;
+        let rating=6.0+(getPlayerMatchStrength(p)-p.ovr)*0.08;
+        rating+=contribution*1.15;
+        if(p.pos==='GK' && contribution===0)rating+=0.15;
+        rating=clampNum(rating,4.5,10);
+        p.lastMatchRating=Math.round(rating*10)/10;
+        p.matchRatings.push(p.lastMatchRating);
+        if(p.matchRatings.length>40)p.matchRatings.shift();
+        p.careerMatches=(p.careerMatches||0)+1;
+        const n=p.careerMatches;
+        p.careerMatchRating=((p.careerMatchRating||0)*(n-1)+p.lastMatchRating)/n;
+        p.seasonGoals=(p.seasonGoals||0)+eventList.filter(e=>e.playerId===p.id&&e.type!=='own_goal').length;
+        p.seasonAssists=(p.seasonAssists||0)+eventList.filter(e=>e.assistId===p.id).length;
+        // Small form movement: results and performances matter, but don't dominate ability.
+        p.seasonForm=clampNum(Math.round((p.seasonForm===undefined?50:p.seasonForm)*0.82 + p.lastMatchRating*10*0.18),25,90);
+    });
+}
+function updateStarStatusForPlayer(p){
+    ensurePlayerPerformanceData(p);
+    const goals=p.seasonGoals||0, assists=p.seasonAssists||0;
+    const production=goals+assists;
+    const appearances=Math.max(1,p.careerMatches||1);
+    const avg=p.careerMatchRating||6.5;
+    // G/A is the main driver; match performance and consistency support it.
+    let score=production*1.8 + Math.max(0,avg-6)*9 + (p.consistency||55)*0.10 + Math.min(20,appearances/15);
+    if(p.pos==='GK')score=production*0.7 + Math.max(0,avg-6)*12 + (p.consistency||55)*0.12 + Math.min(20,appearances/15);
+    p.starScore=Math.round(score*10)/10;
+    const old=p.isStar===true;
+    p.isStar=p.starScore>=68;
+    p.isSuperstar=p.starScore>=90;
+    // Stars are earned; never rename every generated player just because they are high OVR.
+    if(!p.isStar && old && p.starScore<58)p.starDropSeason=currentSeason;
+}
+function updateAllStarStatuses(){
+    teamsData.forEach(t=>t.squad.forEach(updateStarStatusForPlayer));
+}
+function resetSeasonPlayerPerformance(){
+    teamsData.forEach(t=>t.squad.forEach(p=>{
+        ensurePlayerPerformanceData(p);
+        p.seasonGoals=0;p.seasonAssists=0;p.seasonForm=clampNum(Math.round((p.seasonForm||50)*0.72+50*0.28),35,75);
+    }));
+}
+function getDynamicTeamStrength(team){
+    if(!team||!team.squad||!team.squad.length)return 60;
+    const best=[...team.squad].sort((a,b)=>getPlayerMatchStrength(b)-getPlayerMatchStrength(a)).slice(0,11);
+    const avg=best.reduce((a,p)=>a+getPlayerMatchStrength(p),0)/best.length;
+    const depth=team.squad.slice(11).reduce((a,p)=>a+getPlayerMatchStrength(p),0)/Math.max(1,team.squad.length-11);
+    const reputation=team.clubReputation||50;
+    return clampNum(Math.round(avg*0.82+depth*0.10+reputation*0.08),45,96);
+}
+function evolveClubPower(team){
+    if(!team||team.id==='free_agents')return;
+    const strength=getDynamicTeamStrength(team);
+    if(team.clubReputation===undefined)team.clubReputation=clampNum(strength,35,95);
+    const stageBoost={none:-0.2,group:0.1,r16:0.6,qf:1.2,sf:1.8,final:2.4,winner:4}[team.furthestStage]||0;
+    const budgetBoost=Math.max(-1.5,Math.min(1.5,Math.log10(Math.max(1,team.budget||1))/2-1));
+    // Slow-moving: clubs can rise or collapse, but not teleport from 65 to 95 in one year.
+    team.clubReputation=clampNum(team.clubReputation*0.78+strength*0.17+50*0.05+stageBoost+budgetBoost,30,96);
+    team.dynamicPower=Math.round(team.clubReputation*10)/10;
+}
+
 const POT_PLAYER_CAPS={
-    1:{ceiling:94,floor:71,range:8},
-    2:{ceiling:89,floor:67,range:6},
-    3:{ceiling:84,floor:63,range:4},
+    1:{ceiling:95,floor:73,range:9},
+    2:{ceiling:92,floor:69,range:7},
+    3:{ceiling:88,floor:65,range:5},
     4:{ceiling:79,floor:59,range:2},
     5:{ceiling:74,floor:56,range:1}
 };
@@ -502,41 +666,26 @@ function generatePlayer(pos,baseOvr,youth,luckBias,generationProfile){
     return {
         id:nextPlayerId++,name,pos,ovr,pot:Math.max(ovr,Math.min(ceiling,pot)),age,
         value:computePlayerValue({pos,ovr,age},null),pac,sho,pas,dri,def,phy,
-        isStar:false,clubHistory:[],ovrHistory:[{season:currentSeason||1,ovr}],seasonForm:50
+        isStar:false,isSuperstar:false,starScore:0,clubHistory:[],ovrHistory:[{season:currentSeason||1,ovr}],seasonForm:50,matchStrength:ovr,consistency:youth?55:70,experience:youth?Math.max(0,(age-16)*7):Math.max(0,Math.min(100,(age-18)*7)),matchRatings:[],matchStrengthHistory:[],seasonGoals:0,seasonAssists:0,careerMatches:0,careerMatchRating:0
     };
 }
 const SQUAD_TEMPLATE=['GK','GK','GK','CB','CB','CB','CB','LB','LB','RB','RB','CDM','CDM','CM','CM','CAM','CAM','LW','RW','ST','ST','ST'];
 const STAR_CAPS={1:3,2:2,3:1,4:1,5:1};
 function generateSquad(baseOvr,luckBias,club){
     const pot=club&&club.pot!==undefined?club.pot:3;
-    const profile=club&&club.playerCeiling!==undefined?{ceiling:Math.min(club.playerCeiling, POT_PLAYER_CAPS[pot]?.ceiling || club.playerCeiling), floor:Math.max(58, Math.round(baseOvr-10))}:{...getRealisticGenerationProfile(pot,baseOvr)};
-    const squad=SQUAD_TEMPLATE.map(pos=>generatePlayer(pos,baseOvr,false,luckBias,{...profile,pot}));
-    const ordered=[...squad].sort((a,b)=>b.ovr-a.ovr);
-    const starCap=STAR_CAPS[pot]||1;
-    const starCount=Math.min(starCap, Math.max(1, baseOvr >= 80 ? 2 : 1));
-    ordered.slice(0,starCount).forEach((p)=>{
-        p.isStar=true;
-        p.name=pick(STAR_NAMES);
-        const boostCap=Math.max(0, profile.ceiling - p.ovr);
-        const bump=Math.min(boostCap, randInt(1,3));
-        if(bump>0){p.sho=Math.min(99,p.sho+bump);p.dri=Math.min(99,p.dri+bump);p.pas=Math.min(99,p.pas+Math.max(1,Math.round(bump/2)));p.ovr=Math.min(profile.ceiling,computeOvr(p));}
-        p.pot=Math.min(profile.ceiling,Math.max(p.pot,p.ovr));
-    });
-    squad.forEach(p=>{
-        p.ovr=Math.min(profile.ceiling,computeOvr(p));
-        p.pot=Math.min(profile.ceiling,Math.max(p.ovr,p.pot));
-    });
+    const dynamicBase=club&&club.dynamicPower!==undefined?Math.round(club.dynamicPower):baseOvr;
+    const capByPot=(POT_PLAYER_CAPS[pot]||POT_PLAYER_CAPS[5]).ceiling;
+    const ceiling=club&&club.playerCeiling!==undefined?Math.min(club.playerCeiling,capByPot):capByPot;
+    const floor=Math.max(54,Math.min(dynamicBase-7,(POT_PLAYER_CAPS[pot]||POT_PLAYER_CAPS[5]).floor));
+    const profile={ceiling,floor,pot};
+    const squad=SQUAD_TEMPLATE.map(pos=>generatePlayer(pos,dynamicBase,false,luckBias,profile));
+    squad.forEach(ensurePlayerPerformanceData);
     return squad;
 }
 function markStars(squad){
-    const candidates=squad.filter(p=>p.pos!=='GK').sort((a,b)=>b.ovr-a.ovr).slice(0,3);
-    candidates.forEach(p=>{
-        p.isStar=true;
-        p.name=pick(STAR_NAMES);
-        const bump=randInt(1,3);
-        p.sho=Math.min(99,p.sho+bump);p.dri=Math.min(99,p.dri+bump);
-        p.ovr=computeOvr(p);p.pot=Math.max(p.pot,p.ovr);
-    });
+    // Legacy compatibility: stars are now earned from actual G/A and match performances.
+    (squad||[]).forEach(p=>{p.isStar=false;p.isSuperstar=false;ensurePlayerPerformanceData(p);});
+    return squad;
 }
 function fillSquadTo22(squad,baseOvr,generationProfile){
     const need=22-squad.length;
@@ -751,8 +900,9 @@ function buildFreeAgentPool(size){
     const squad=[];
     for(let i=0;i<size;i++){
         const pos=pick(SQUAD_TEMPLATE);
-        const baseOvr=randInt(66,90);
-        squad.push(generatePlayer(pos,baseOvr,true));
+        const baseOvr=Math.random()<0.12?randInt(82,89):randInt(66,82);
+        const ceiling=baseOvr>=82?Math.min(94,baseOvr+randInt(4,8)):Math.min(88,baseOvr+randInt(3,6));
+        squad.push(generatePlayer(pos,baseOvr,true,0,{ceiling,floor:baseOvr>=82?baseOvr-4:baseOvr-6}));
     }
     const wonderkids=[...squad].sort((a,b)=>(b.pot*0.5+b.ovr*0.5)-(a.pot*0.5+a.ovr*0.5)).slice(0,50);
     wonderkids.forEach(p=>{p.isStar=true;p.name=pick(STAR_NAMES);});
@@ -857,7 +1007,61 @@ function getActiveTeam(){return teamById(managedTeamId);}
 function dot(color){return `<span class="club-dot" style="background:${color}"></span>`;}
 function fmtMoney(v){return '\u20ac'+v.toFixed(1)+'M';}
 
-function initApp(){renderTeamSelectScreen();}
+function initApp(){
+    // Startup is deliberately separate from the club picker.
+    // A saved career must NEVER choose a club or enter the game by itself.
+    showStartupScreen();
+}
+function hasSavedCareer(){
+    try{
+        const raw=localStorage.getItem(SAVE_KEY)||localStorage.getItem(LEGACY_SAVE_KEY)||localStorage.getItem(LEGACY_SAVE_KEY_2);
+        if(!raw)return false;
+        const d=JSON.parse(raw);
+        return !!(d&&Array.isArray(d.teamsData)&&d.teamsData.length>=60&&d.managedTeamId);
+    }catch(e){return false;}
+}
+function showStartupScreen(){
+    const startup=document.getElementById('startup-screen');
+    const picker=document.getElementById('team-select-screen');
+    const app=document.getElementById('main-app');
+    if(startup)startup.style.display='block';
+    if(picker)picker.style.display='none';
+    if(app)app.style.display='none';
+    const exists=hasSavedCareer();
+    const status=document.getElementById('save-status');
+    const btn=document.getElementById('continue-save-btn');
+    if(status)status.innerHTML=exists?'💾 <strong>Saved career found.</strong> Your existing club, players, transfers and archive are ready.':'📁 <strong>No saved career found.</strong> Start a new career to choose your club.';
+    if(btn){btn.disabled=!exists;btn.style.opacity=exists?'1':'.45';btn.style.cursor=exists?'pointer':'not-allowed';}
+}
+function continueSavedCareer(){
+    if(!hasSavedCareer())return;
+    if(!loadPersistentState()){alert('The saved career could not be loaded. Please start a new career.');showStartupScreen();return;}
+    enterLoadedCareer();
+}
+function startNewCareer(){
+    if(hasSavedCareer()&&!confirm('Start a NEW career? This will delete the current saved career, including its permanent retired-player archive. This cannot be undone.'))return;
+    localStorage.removeItem(SAVE_KEY);
+    localStorage.removeItem(LEGACY_SAVE_KEY);localStorage.removeItem(LEGACY_SAVE_KEY_2);
+    sessionStorage.setItem('ucl_manager_start_new_career','1');
+    // Restore a clean in-memory state. Built-in club/player data remains untouched.
+    location.reload();
+}
+function enterLoadedCareer(){
+    document.getElementById('startup-screen').style.display='none';
+    document.getElementById('team-select-screen').style.display='none';
+    document.getElementById('main-app').style.display='block';
+    ensurePlayerMetadata();
+    if(!competition)startSeason();
+    generateIncomingOffers();
+    loadTeamData();renderTournament();updateManagedStrip();renderLeaderboard();renderPlayerSearch();renderTransferMarket();
+    if(document.getElementById('always-best-xi-toggle'))document.getElementById('always-best-xi-toggle').checked=alwaysBestXI;
+}
+function showClubPicker(){
+    document.getElementById('startup-screen').style.display='none';
+    document.getElementById('main-app').style.display='none';
+    document.getElementById('team-select-screen').style.display='block';
+    renderTeamSelectScreen();
+}
 function renderTeamSelectScreen(){
     const wrap=document.getElementById('pot-blocks');wrap.innerHTML='';
     const potLabels={1:'Pot 1 - Elite',2:'Pot 2 - Contenders',3:'Pot 3 - Challengers',4:'Pot 4 - Group Defenders',5:'Pot 5 - Qualifying Challengers'};
@@ -881,9 +1085,13 @@ function calcSquadAvg(t){const s=[...t.squad].sort((a,b)=>b.ovr-a.ovr).slice(0,1
 function chooseTeam(id){
     managedTeamId=id;
     document.getElementById('team-select-screen').style.display='none';
+    document.getElementById('startup-screen').style.display='none';
     document.getElementById('main-app').style.display='block';
     teamsData.forEach(t=>{if(t.id!==managedTeamId&&t.id!=='free_agents')arrangeBestXIForTeam(t);});
     startSeason();loadTeamData();renderTournament();updateManagedStrip();renderLeaderboard();
+    ensurePlayerMetadata();
+    generateIncomingOffers();
+    savePersistentState();
 }
 function confirmChangeTeam(){
     if(confirm('Changing clubs will restart the entire save (seasons, transfers, everything). Continue?')){
@@ -944,6 +1152,7 @@ function renderRoster(){
             <td>${p.age}</td>
             <td><span class="badge ${getValueClass(p.ovr)}">${p.ovr}</span>${cardTierBadge(p.ovr)}</td>
             <td><span class="badge ${getValueClass(p.pot)}">${p.pot}</span></td>
+            <td><span class="badge ${getValueClass(Math.round(getPlayerMatchStrength(p)))}">${Math.round(getPlayerMatchStrength(p))}</span></td>
             <td>${fmtMoney(p.value)}</td>
             <td><button class="btn btn-ghost btn-sm" onclick="swapWithSelected(${index})">${selectedSlotIndex!==null?'Swap':'Select'}</button></td>`;
         tbody.appendChild(tr);
@@ -1011,31 +1220,40 @@ function toggleAlwaysBestXI(){
 }
 
 // ==================== MATCH ENGINE ====================
-const POS_ATTACK_W={ST:1.0,LW:0.8,RW:0.8,CAM:0.7,CM:0.35,LM:0.5,RM:0.5,CDM:0.15,LB:0.08,RB:0.08,CB:0.05,GK:0.01};
-const POS_ASSIST_W={CAM:1.0,CM:0.9,LM:0.7,RM:0.7,LW:0.7,RW:0.7,CDM:0.5,ST:0.4,LB:0.4,RB:0.4,CB:0.2,GK:0.05};
-const POS_DEF_W={CB:1.0,LB:0.55,RB:0.55,CDM:0.3,GK:0.15,CM:0.15,LM:0.05,RM:0.05,CAM:0.03,LW:0.03,RW:0.03,ST:0.03};
-function getGK(team){return team.squad.slice(0,11).find(p=>p.pos==='GK')||{ovr:70};}
+const POS_ATTACK_W={ST:1.0,LW:0.86,RW:0.86,CAM:0.62,CM:0.28,LM:0.42,RM:0.42,CDM:0.12,LB:0.055,RB:0.055,CB:0.035,GK:0.005};
+const POS_ASSIST_W={CAM:1.0,CM:0.9,LM:0.72,RM:0.72,LW:0.68,RW:0.68,CDM:0.48,ST:0.32,LB:0.34,RB:0.34,CB:0.14,GK:0.02};
+const POS_DEF_W={CB:1.0,LB:0.55,RB:0.55,CDM:0.3,GK:0.15,CM:0.15,LM:0.05,RM:0.05,CAM:0.025,LW:0.025,RW:0.025,ST:0.02};
+function getGK(team){return team.squad.slice(0,11).find(p=>p.pos==='GK')||{ovr:70,matchStrength:70};}
 function attackRating(team){
     const starters=team.squad.slice(0,11);const slots=getFormationDefinition(team.formation).slots;
     let total=0,wsum=0;
-    starters.forEach((p,i)=>{const ap=slots[i]||p.pos;const w=POS_ATTACK_W[ap]||0.05;const val=p.sho*0.5+p.dri*0.3+p.pas*0.2;total+=w*val;wsum+=w;});
+    starters.forEach((p,i)=>{
+        const ap=slots[i]||p.pos;const w=POS_ATTACK_W[ap]||0.04;const ms=getPlayerMatchStrength(p);
+        const val=ms*0.70+p.sho*0.18+p.dri*0.07+p.pas*0.05;
+        total+=w*val;wsum+=w;
+    });
     return wsum?total/wsum:60;
 }
 function defenseRating(team){
     const starters=team.squad.slice(0,11).filter(p=>p.pos!=='GK');
     let total=0,wsum=0;
-    starters.forEach(p=>{const w=POS_DEF_W[p.pos]||0.05;const val=p.def*0.6+p.phy*0.4;total+=w*val;wsum+=w;});
+    starters.forEach(p=>{
+        const w=POS_DEF_W[p.pos]||0.04;const ms=getPlayerMatchStrength(p);
+        const val=ms*0.72+p.def*0.20+p.phy*0.08;total+=w*val;wsum+=w;
+    });
     return wsum?total/wsum:60;
 }
 function computeXG(atk,def,gkOvr,advMult){
-    const ratio=Math.pow(Math.max(20,atk)/Math.max(20,def),1.3);
-    let xg=1.25*ratio*advMult;
-    const gkFactor=Math.max(0.78,Math.min(1.18,1-(gkOvr-75)/260));
+    const difference=atk-def;
+    const balance=Math.exp(Math.max(-0.50,Math.min(0.50,difference/34)));
+    let xg=1.30*balance*advMult;
+    const gkFactor=Math.max(0.78,Math.min(1.16,1-(gkOvr-75)/280));
     xg*=gkFactor;
-    return Math.max(0.1,Math.min(4.5,xg));
+    return Math.max(0.25,Math.min(3.25,xg));
 }
 function poissonRandom(lambda){const L=Math.exp(-lambda);let k=0,p=1;do{k++;p*=Math.random();}while(p>L);return k-1;}
 function weightedPick(list,weightFn){
+    if(!list||!list.length)return null;
     const weights=list.map(p=>Math.max(0.001,weightFn(p)));
     const total=weights.reduce((a,b)=>a+b,0);
     let r=Math.random()*total;
@@ -1047,20 +1265,76 @@ function assignMinutes(count,usedSet,min,max){
     while(minutes.length<count&&attempts<500){attempts++;const m=randInt(min,max);if(!usedSet.has(m)){usedSet.add(m);minutes.push(m);}}
     return minutes.sort((a,b)=>a-b);
 }
+function pickScorerForSituation(outfield,attackers,defendersScoring,situation){
+    if(situation==='penalty'){
+        return weightedPick(attackers.length?attackers:outfield,p=>{
+            const fin=(p.sho||50);const role=['ST','LW','RW','CAM'].includes(p.pos)?2.2:1;
+            return role*(fin*0.72+getPlayerMatchStrength(p)*0.28);
+        });
+    }
+    if(situation==='freekick'){
+        return weightedPick(attackers.length?attackers:outfield,p=>{
+            const role=['ST','CAM','LW','RW'].includes(p.pos)?1.9:0.55;
+            return role*((p.sho||50)*0.65+(p.pas||50)*0.20+getPlayerMatchStrength(p)*0.15);
+        });
+    }
+    if(situation==='corner'){
+        const aerial=outfield.filter(p=>['CB','ST','CM','CDM','CAM'].includes(p.pos));
+        return weightedPick(aerial.length?aerial:outfield,p=>{
+            const role=p.pos==='ST'?2.4:(['CB','CAM'].includes(p.pos)?1.8:1.0);
+            return role*(getPlayerMatchStrength(p)*0.45+(p.phy||50)*0.25+(p.sho||50)*0.30);
+        });
+    }
+    const pool=attackers.length?attackers:outfield;
+    return weightedPick(pool,p=>{
+        // Strong positional separation: a striker should be dramatically more likely to finish than a CM.
+        const roleMap={ST:4.2,LW:3.0,RW:3.0,CAM:2.0,LM:1.65,RM:1.65,CM:.75,CDM:.32,LB:.13,RB:.13,CB:.08};
+        const role=roleMap[p.pos]||.25;
+        return role*Math.pow(Math.max(1,getPlayerMatchStrength(p)*0.68+(p.sho||50)*0.24+(p.dri||50)*0.08),1.08);
+    });
+}
 function generateGoalsForTeam(scoringTeam,concedingTeam,minutesList){
-    const scorers=scoringTeam.squad.slice(0,11);const defenders=concedingTeam.squad.slice(0,11);
+    const starters=scoringTeam.squad.slice(0,11);const defenders=concedingTeam.squad.slice(0,11);
+    const ownGoalCandidates=defenders.filter(p=>p.pos!=='GK');
+    const outfield=starters.filter(p=>p.pos!=='GK');
+    const attackers=outfield.filter(p=>['ST','LW','RW','CAM','LM','RM'].includes(p.pos));
+    const defendersScoring=outfield.filter(p=>['CB','LB','RB','CDM'].includes(p.pos));
     return minutesList.map(minute=>{
-        if(Math.random()<0.035){
-            const ogPlayer=weightedPick(defenders,p=>POS_DEF_W[p.pos]||0.05);
+        if(Math.random()<0.018){
+            const ogPlayer=weightedPick(ownGoalCandidates.length?ownGoalCandidates:defenders,p=>POS_DEF_W[p.pos]||0.05);
             return {minute,teamId:scoringTeam.id,type:'own_goal',playerId:ogPlayer.id,playerName:ogPlayer.name,assistId:null,assistName:null};
         }
-        const scorer=weightedPick(scorers,p=>(POS_ATTACK_W[p.pos]||0.05)*(p.sho*0.6+p.dri*0.4));
-        const roll=Math.random();let type='goal';
-        if(roll<0.08)type='penalty';else if(roll<0.14)type='freekick';
+
+        // Set pieces now have their own scorer logic. Penalties are attack-driven, free kicks favour technical attackers,
+        // and corners can be scored by strikers, centre-backs and attacking midfielders.
+        const roll=Math.random();
+        let type='goal';
+        if(roll<0.075)type='penalty';
+        else if(roll<0.105)type='freekick';
+        else if(roll<0.175)type='corner';
+
+        // A little tactical variety: normal open-play goals dominate, but set pieces are meaningful.
+        let scorer;
+        if(type==='corner')scorer=pickScorerForSituation(outfield,attackers,defendersScoring,'corner');
+        else if(type==='penalty')scorer=pickScorerForSituation(outfield,attackers,defendersScoring,'penalty');
+        else if(type==='freekick')scorer=pickScorerForSituation(outfield,attackers,defendersScoring,'freekick');
+        else {
+            // Only ~3% of open-play goals go to defenders; midfielders still score, but far less than forwards.
+            const pool=(defendersScoring.length&&Math.random()<0.03)?defendersScoring:attackers;
+            scorer=pickScorerForSituation(outfield,pool,defendersScoring,'open');
+        }
+        if(!scorer)scorer=weightedPick(outfield,p=>(p.sho||50));
+
         let assist=null;
-        if(type==='goal'&&Math.random()<0.72){
-            const candidates=scorers.filter(p=>p.id!==scorer.id);
-            assist=weightedPick(candidates,p=>(POS_ASSIST_W[p.pos]||0.2)*p.pas);
+        if(type==='goal'&&Math.random()<0.76){
+            const candidates=outfield.filter(p=>p.id!==scorer.id);
+            assist=weightedPick(candidates,p=>{
+                const w=POS_ASSIST_W[p.pos]||0.12;
+                return w*(getPlayerMatchStrength(p)*0.50+(p.pas||50)*0.50);
+            });
+        } else if(type==='corner'){
+            const takers=outfield.filter(p=>p.id!==scorer.id&&['CAM','CM','LM','RM','LW','RW'].includes(p.pos));
+            assist=weightedPick(takers,p=>(POS_ASSIST_W[p.pos]||0.5)*((p.pas||50)*0.7+getPlayerMatchStrength(p)*0.3));
         }
         return {minute,teamId:scoringTeam.id,type,playerId:scorer.id,playerName:scorer.name,assistId:assist?assist.id:null,assistName:assist?assist.name:null};
     });
@@ -1074,8 +1348,11 @@ function benchDepthFactor(team){
 function simulateMatch(homeTeam,awayTeam,opts){
     opts=opts||{};
     const neutral=!!opts.neutral,minMinute=opts.minMinute||1,maxMinute=opts.maxMinute||90,scale=opts.scale!==undefined?opts.scale:1;
-    const atkH=attackRating(homeTeam),defA=defenseRating(awayTeam),gkA=getGK(awayTeam).ovr;
-    const atkA=attackRating(awayTeam),defH=defenseRating(homeTeam),gkH=getGK(homeTeam).ovr;
+    const importance=opts.importance||1;
+    homeTeam.squad.slice(0,11).forEach(p=>rollMatchStrength(p,importance));
+    awayTeam.squad.slice(0,11).forEach(p=>rollMatchStrength(p,importance));
+    const atkH=attackRating(homeTeam),defA=defenseRating(awayTeam),gkA=getGK(awayTeam).matchStrength||getGK(awayTeam).ovr;
+    const atkA=attackRating(awayTeam),defH=defenseRating(homeTeam),gkH=getGK(homeTeam).matchStrength||getGK(homeTeam).ovr;
     const homeAdv=neutral?1:1.1;
     let xgH=computeXG(atkH,defA,gkA,homeAdv)*scale;
     let xgA=computeXG(atkA,defH,gkH,1)*scale;
@@ -1088,6 +1365,8 @@ function simulateMatch(homeTeam,awayTeam,opts){
     const homeEvents=generateGoalsForTeam(homeTeam,awayTeam,homeMinutes);
     const awayEvents=generateGoalsForTeam(awayTeam,homeTeam,awayMinutes);
     const events=[...homeEvents,...awayEvents].sort((a,b)=>a.minute-b.minute);
+    applyMatchPerformance(homeTeam,events.filter(e=>e.teamId===homeTeam.id),importance);
+    applyMatchPerformance(awayTeam,events.filter(e=>e.teamId===awayTeam.id),importance);
     return {scoreHome:goalsHome,scoreAway:goalsAway,events};
 }
 function pickPenaltyTakers(team){return [...team.squad.slice(0,11)].filter(p=>p.pos!=='GK').sort((x,y)=>y.sho-x.sho).slice(0,5);}
@@ -1104,8 +1383,16 @@ function simulatePenalties(teamA,teamB){
     const winnerId=scoreA>scoreB?teamA.id:teamB.id;
     return {scoreA,scoreB,sequence,winnerId};
 }
+function ensureClubHistoryEntry(team){
+    if(!team||team.id==='free_agents')return null;
+    if(!clubAllTimeStats[team.id])clubAllTimeStats[team.id]={teamId:team.id,name:team.name,seasons:0,titles:0,finalsMade:0,finalsLost:0,uclGoals:0};
+    if(clubAllTimeStats[team.id].finalsMade==null)clubAllTimeStats[team.id].finalsMade=clubAllTimeStats[team.id].finals||0;
+    clubAllTimeStats[team.id].name=team.name;
+    return clubAllTimeStats[team.id];
+}
 function recordEvents(events){
     events.forEach(e=>{
+        if(e.teamId){const club=ensureClubHistoryEntry(teamById(e.teamId));if(club)club.uclGoals++;}
         if(e.type==='own_goal')return;
         if(!playerStats[e.playerId])playerStats[e.playerId]={id:e.playerId,name:e.playerName,teamId:e.teamId,goals:0,assists:0};
         playerStats[e.playerId].goals++;
@@ -1178,10 +1465,10 @@ function silentPlayLeg(tie,legNum){
     const teamAObj=teamById(tie.teamA),teamBObj=teamById(tie.teamB);
     if(legNum===1){
         const r=simulateMatch(teamAObj,teamBObj,{neutral:false});
-        tie.leg1.scoreA=r.scoreHome;tie.leg1.scoreB=r.scoreAway;tie.leg1.events=r.events;tie.leg1.played=true;
+        tie.leg1.scoreA=r.scoreHome;tie.leg1.scoreB=r.scoreAway;tie.leg1.events=r.events;tie.leg1.played=true;recordEvents(r.events);logMatch(teamAObj,teamBObj,r.scoreHome,r.scoreAway,roundLabel(competition.stage)+' Leg 1');logMatch(teamBObj,teamAObj,r.scoreAway,r.scoreHome,roundLabel(competition.stage)+' Leg 1');
     } else {
         const r=simulateMatch(teamBObj,teamAObj,{neutral:false});
-        tie.leg2.scoreA=r.scoreAway;tie.leg2.scoreB=r.scoreHome;tie.leg2.events=r.events;tie.leg2.played=true;
+        tie.leg2.scoreA=r.scoreAway;tie.leg2.scoreB=r.scoreHome;tie.leg2.events=r.events;tie.leg2.played=true;recordEvents(r.events);logMatch(teamBObj,teamAObj,r.scoreHome,r.scoreAway,roundLabel(competition.stage)+' Leg 2');logMatch(teamAObj,teamBObj,r.scoreAway,r.scoreHome,roundLabel(competition.stage)+' Leg 2');
     }
 }
 function silentFinalizeTie(tie){
@@ -1210,16 +1497,84 @@ function resolveQualifyingInstantly(){
     const playoffTies=shuffledQ2.map((w,i)=>makeTie(pot4Defenders[i],w,false));
     competition.playoff={ties:playoffTies};
     competition.playoff.ties.forEach(t=>{silentPlayLeg(t,1);silentPlayLeg(t,2);silentFinalizeTie(t);});
-    const pot4winners=competition.playoff.ties.map(t=>t.winner);
-    startGroupsFromPot4(pot4winners);
+    startLeaguePhase();
+}
+function generateLeaguePhaseFixtures(teamIds){
+    // A deterministic 36-team league phase: make a random single round-robin order, then
+    // select eight rounds. Every club therefore gets exactly 8 unique opponents and 4 home/4 away on average.
+    const ids=shuffle(teamIds);
+    const n=ids.length;
+    const rounds=[];
+    const work=[...ids];
+    if(n%2!==0)work.push(null);
+    const m=work.length;
+    for(let r=0;r<m-1;r++){
+        const pairs=[];
+        for(let i=0;i<m/2;i++){
+            let a=work[i],b=work[m-1-i];
+            if(a&&b)pairs.push([a,b]);
+        }
+        rounds.push(pairs);
+        work.splice(1,0,work.pop());
+    }
+    const chosen=shuffle(rounds).slice(0,8);
+    const fixtures=[];
+    chosen.forEach((round,ri)=>{
+        round.forEach(([a,b])=>{
+            const flip=Math.random()<0.5;
+            const home=flip?b:a,away=flip?a:b;
+            fixtures.push({matchday:ri+1,home,away,played:false,scoreHome:null,scoreAway:null,events:null});
+        });
+    });
+    return fixtures;
+}
+function getLeaguePhaseTeams(){
+    const qualified=shuffle([
+        ...teamsData.filter(t=>t.pot===1),
+        ...teamsData.filter(t=>t.pot===2),
+        ...teamsData.filter(t=>t.pot===3),
+        ...teamsData.filter(t=>t.pot===4)
+    ].map(t=>t.id));
+    const playoffWinners=(competition&&competition.playoff)?competition.playoff.ties.map(t=>t.winner):[];
+    const used=new Set(playoffWinners);
+    const base=qualified.filter(id=>!used.has(id));
+    // 34 automatic clubs + 2 playoff winners = 36.
+    const selected=[...playoffWinners,...base.slice(0,36-playoffWinners.length)];
+    return selected.slice(0,36);
+}
+function computeLeagueStandings(){
+    const table={};
+    (competition.leagueTeams||[]).forEach(id=>{table[id]={id,p:0,w:0,d:0,l:0,gf:0,ga:0,gd:0,pts:0};});
+    (competition.leagueFixtures||[]).filter(f=>f.played).forEach(f=>{
+        const h=table[f.home],a=table[f.away]; if(!h||!a)return;
+        h.p++;a.p++;h.gf+=f.scoreHome;h.ga+=f.scoreAway;a.gf+=f.scoreAway;a.ga+=f.scoreHome;
+        if(f.scoreHome>f.scoreAway){h.w++;h.pts+=3;a.l++;}
+        else if(f.scoreHome<f.scoreAway){a.w++;a.pts+=3;h.l++;}
+        else{h.d++;a.d++;h.pts++;a.pts++;}
+    });
+    Object.values(table).forEach(r=>r.gd=r.gf-r.ga);
+    return Object.values(table).sort((x,y)=>y.pts-x.pts||y.gd-x.gd||y.gf-x.gf||getDynamicTeamStrength(teamById(y.id))-getDynamicTeamStrength(teamById(x.id)));
+}
+function startLeaguePhase(){
+    const leagueTeams=getLeaguePhaseTeams();
+    competition.leagueTeams=leagueTeams;
+    competition.leagueFixtures=generateLeaguePhaseFixtures(leagueTeams);
+    competition.leagueMatchday=1;
+    competition.leagueStandings=null;
+    competition.leaguePlayoff=null;
+    competition.stage='league';
+    viewStage='league';
+    leagueTeams.forEach(id=>teamById(id).furthestStage='league');
 }
 function startSeason(){
     tieCounter=1;playerStats={};potsScores={};transferLog=[];
-    teamsData.forEach(t=>t.furthestStage='none');
+    ensurePlayerMetadata();
+    resetSeasonPlayerPerformance();
+    teamsData.forEach(t=>{if(t.id!=='free_agents'){t.furthestStage='none';evolveClubPower(t);}});
     const pot5=shuffle(teamsData.filter(t=>t.pot===5).map(t=>t.id));
     const q1ties=[];
     for(let i=0;i<pot5.length;i+=2)q1ties.push(makeTie(pot5[i],pot5[i+1],false));
-    competition={stage:'q1',q1:{ties:q1ties},q2:null,playoff:null,groups:null,currentMatchday:1,r16:null,qf:null,sf:null,final:null,champion:null,lastResults:null};
+    competition={stage:'q1',q1:{ties:q1ties},q2:null,playoff:null,league:null,leagueTeams:null,leagueFixtures:null,leagueMatchday:1,leaguePlayoff:null,r16:null,qf:null,sf:null,final:null,champion:null,lastResults:null};
     resolveQualifyingInstantly();
 }
 function computeStandings(group){
@@ -1230,75 +1585,57 @@ function computeStandings(group){
         h.p++;a.p++;h.gf+=f.scoreHome;h.ga+=f.scoreAway;a.gf+=f.scoreAway;a.ga+=f.scoreHome;
         if(f.scoreHome>f.scoreAway){h.w++;h.pts+=3;a.l++;}
         else if(f.scoreHome<f.scoreAway){a.w++;a.pts+=3;h.l++;}
-        else{h.d++;a.d++;h.pts+=1;a.pts+=1;}
+        else{h.d++;a.d++;h.pts++;a.pts++;}
     });
     const rows=Object.values(table);
     rows.forEach(r=>r.gd=r.gf-r.ga);
     rows.sort((x,y)=>y.pts-x.pts||y.gd-x.gd||y.gf-x.gf||Math.random()-0.5);
     return rows;
 }
-function startGroupsFromPot4(pot4winners){
-    const groupLetters=['A','B','C','D','E','F','G','H'];
-    const pot1=shuffle(teamsData.filter(t=>t.pot===1).map(t=>t.id));
-    const pot2=shuffle(teamsData.filter(t=>t.pot===2).map(t=>t.id));
-    const pot3=shuffle(teamsData.filter(t=>t.pot===3).map(t=>t.id));
-    const pot4=shuffle(pot4winners);
-    const groups={};
-    groupLetters.forEach((letter,i)=>{
-        const teamIds=[pot1[i],pot2[i],pot3[i],pot4[i]];
-        groups[letter]={teams:teamIds,fixtures:buildGroupFixtures(teamIds)};
-        teamIds.forEach(id=>{teamById(id).furthestStage='group';});
-    });
-    competition.groups=groups;competition.currentMatchday=1;competition.stage='groups';viewStage='groups';
-}
-function commitGroupFixtureResult(letter,f,r){
+function commitLeagueFixtureResult(f,r){
     const home=teamById(f.home),away=teamById(f.away);
     f.scoreHome=r.scoreHome;f.scoreAway=r.scoreAway;f.events=r.events;f.played=true;
     recordEvents(r.events);
-    logMatch(home,away,r.scoreHome,r.scoreAway,`Group ${letter}, MD${f.matchday}`);
-    logMatch(away,home,r.scoreAway,r.scoreHome,`Group ${letter}, MD${f.matchday}`);
+    logMatch(home,away,r.scoreHome,r.scoreAway,`League MD${f.matchday}`);
+    logMatch(away,home,r.scoreAway,r.scoreHome,`League MD${f.matchday}`);
 }
-function checkGroupMatchdayComplete(){
-    const md=competition.currentMatchday;
-    const allPlayed=Object.values(competition.groups).every(g=>g.fixtures.filter(f=>f.matchday===md).every(f=>f.played));
-    if(allPlayed){
-        if(md>=6){competition.stage='knockout_draw_pending';} else {competition.currentMatchday++;}
-    }
-}
-function simulateGroupMatchday(){
-    const md=competition.currentMatchday;const results=[];
-    Object.entries(competition.groups).forEach(([letter,group])=>{
-        group.fixtures.filter(f=>f.matchday===md&&!f.played).forEach(f=>{
-            const home=teamById(f.home),away=teamById(f.away);
-            const r=simulateMatch(home,away,{neutral:false});
-            commitGroupFixtureResult(letter,f,r);
-            results.push({group:letter,home:f.home,away:f.away,scoreHome:r.scoreHome,scoreAway:r.scoreAway,events:r.events});
-        });
+function finishLeaguePhase(){
+    const standings=computeLeagueStandings();
+    competition.leagueStandings=standings;
+    const direct=standings.slice(0,8).map(r=>r.id);
+    const playoff=standings.slice(8,24).map(r=>r.id);
+    const eliminated=standings.slice(24).map(r=>r.id);
+    eliminated.forEach(id=>teamById(id).furthestStage='eliminated');
+    direct.forEach(id=>teamById(id).furthestStage='r16');
+    playoff.forEach(id=>teamById(id).furthestStage='league_playoff');
+    const ties=[];
+    // 9-16 are seeded and play 17-24, with the stronger seed at home in leg 2.
+    const a=playoff.slice(0,8),b=playoff.slice(8,16);
+    shuffle(a).forEach((seed,i)=>{
+        const opponent=b[i];
+        ties.push({id:'tie_'+(tieCounter++),teamA:opponent,teamB:seed,
+            leg1:{scoreA:null,scoreB:null,played:false,events:null},
+            leg2:{scoreA:null,scoreB:null,played:false,events:null},
+            extraTime:null,penalties:null,aggA:null,aggB:null,winner:null,isFinal:false});
     });
-    competition.lastResults={type:'group',label:`Matchday ${md}`,results};
-    checkGroupMatchdayComplete();
+    competition.leaguePlayoff={ties};
+    competition.stage='league_playoff';
+    viewStage='league_playoff';
 }
-function startKnockoutFromGroups(){
-    const winners=[],runnerups=[],groupOfTeam={};
-    Object.entries(competition.groups).forEach(([letter,group])=>{
-        const standings=computeStandings(group);
-        winners.push(standings[0].id);runnerups.push(standings[1].id);
-        group.teams.forEach(id=>groupOfTeam[id]=letter);
-        group.finalStandings=standings;
-    });
-    let shuffledRunnerups=shuffle(runnerups);
-    const ties=[];const usedRunnerups=new Set();
-    winners.forEach(winnerId=>{
-        let idx=shuffledRunnerups.findIndex(rid=>!usedRunnerups.has(rid)&&groupOfTeam[rid]!==groupOfTeam[winnerId]);
-        if(idx===-1)idx=shuffledRunnerups.findIndex(rid=>!usedRunnerups.has(rid));
-        const runnerupId=shuffledRunnerups[idx];usedRunnerups.add(runnerupId);
-        ties.push(makeTie(runnerupId,winnerId,false));
+function startKnockoutFromLeaguePlayoff(){
+    const winners=competition.leaguePlayoff.ties.map(t=>t.winner);
+    const direct=competition.leagueStandings.slice(0,8).map(r=>r.id);
+    const shuffledDirect=shuffle(direct);
+    const ties=[];
+    shuffledDirect.forEach((seed,i)=>{
+        ties.push({id:'tie_'+(tieCounter++),teamA:winners[i],teamB:seed,
+            leg1:{scoreA:null,scoreB:null,played:false,events:null},
+            leg2:{scoreA:null,scoreB:null,played:false,events:null},
+            extraTime:null,penalties:null,aggA:null,aggB:null,winner:null,isFinal:false});
     });
     competition.r16={ties};competition.stage='r16';viewStage='r16';
     winners.forEach(id=>teamById(id).furthestStage='r16');
-    runnerups.forEach(id=>teamById(id).furthestStage='r16');
 }
-
 // ==================== KNOCKOUT ENGINE (also used for qualifying) ====================
 function makeTie(teamA,teamB,isFinal){
     return {id:'tie_'+(tieCounter++),teamA,teamB,
@@ -1372,12 +1709,12 @@ function finalizeTie(tie){
     tie.aggA=aggA;tie.aggB=aggB;
 }
 function getCurrentRound(){
-    const knockoutStages=['q1','q2','playoff','r16','qf','sf','final'];
+    const knockoutStages=['q1','q2','playoff','league_playoff','r16','qf','sf','final'];
     if(!competition||!knockoutStages.includes(competition.stage))return null;
     return competition[competition.stage];
 }
 function roundLabel(stage){
-    return {q1:'Qualifying Round 1',q2:'Qualifying Round 2',playoff:'Qualifying Play-off',groups:'Group Stage',knockout_draw_pending:'Group Stage',r16:'Round of 16',qf:'Quarter-Finals',sf:'Semi-Finals',final:'Final',done:'Final'}[stage]||stage;
+    return {q1:'Qualifying Round 1',q2:'Qualifying Round 2',playoff:'Qualifying Play-off',groups:'Group Stage',knockout_draw_pending:'Group Stage',league:'League Phase',league_playoff:'League Phase Play-off',r16:'Round of 16',qf:'Quarter-Finals',sf:'Semi-Finals',final:'Final',done:'Final'}[stage]||stage;
 }
 
 function simulateWholeSeason(){
@@ -1390,59 +1727,112 @@ function simulateWholeSeason(){
 }
 function simulateStep(){
     if(!competition||competition.stage==='transfer_window')return;
-    if(competition.stage==='groups'){simulateGroupMatchday();renderTournament();renderLeaderboard();return;}
-    if(competition.stage==='knockout_draw_pending'){startKnockoutFromGroups();renderTournament();return;}
-    const round=getCurrentRound();
-    if(!round)return;
+
+    if(competition.stage==='q1'||competition.stage==='q2'||competition.stage==='playoff'){
+        const round=getCurrentRound(); if(!round)return;
+        const pendingLeg1=round.ties.filter(t=>!t.leg1.played);
+        if(pendingLeg1.length){pendingLeg1.forEach(t=>{playLeg(t,1);});competition.lastResults={type:'knockout',label:`${roundLabel(competition.stage)} - Leg 1`,results:pendingLeg1.map(t=>({tie:t,leg:1}))};renderTournament();return;}
+        const pendingLeg2=round.ties.filter(t=>t.leg2&&!t.leg2.played);
+        if(pendingLeg2.length){pendingLeg2.forEach(t=>{playLeg(t,2);finalizeTie(t);});competition.lastResults={type:'knockout',label:`${roundLabel(competition.stage)} - Leg 2`,results:pendingLeg2.map(t=>({tie:t,leg:2}))};renderTournament();return;}
+        if(competition.stage==='q1'){
+            const winners=competition.q1.ties.map(t=>t.winner);const ties=[];for(let i=0;i<winners.length;i+=2)ties.push(makeTie(winners[i],winners[i+1],false));
+            competition.q2={ties};competition.stage='q2';viewStage='q2';
+        } else if(competition.stage==='q2'){
+            const q2Winners=competition.q2.ties.map(t=>t.winner);const pot4Defenders=shuffle(teamsData.filter(t=>t.pot===4).map(t=>t.id));
+            const shuffledQ2=shuffle(q2Winners);const ties=shuffledQ2.map((w,i)=>makeTie(pot4Defenders[i],w,false));
+            competition.playoff={ties};competition.stage='playoff';viewStage='playoff';
+        } else if(competition.stage==='playoff'){
+            startLeaguePhase();
+        }
+        renderTournament();renderLeaderboard();return;
+    }
+
+    if(competition.stage==='league'){
+        const md=competition.leagueMatchday;
+        const fixtures=competition.leagueFixtures.filter(f=>f.matchday===md&&!f.played);
+        const results=[];
+        fixtures.forEach(f=>{
+            const r=simulateMatch(teamById(f.home),teamById(f.away),{importance:1.15});
+            commitLeagueFixtureResult(f,r);
+            results.push({home:f.home,away:f.away,scoreHome:r.scoreHome,scoreAway:r.scoreAway,events:r.events});
+        });
+        competition.lastResults={type:'league',label:`League Phase - Matchday ${md}`,results};
+        if(md>=8)finishLeaguePhase();else competition.leagueMatchday++;
+        renderTournament();renderLeaderboard();return;
+    }
+
+    if(competition.stage==='league_playoff'){
+        const round=competition.leaguePlayoff;
+        if(!round||!round.ties||!round.ties.length){
+            startKnockoutFromLeaguePlayoff();renderTournament();return;
+        }
+        const pending1=round.ties.filter(t=>!t.leg1.played);
+        if(pending1.length){
+            pending1.forEach(t=>playLeg(t,1));
+            competition.lastResults={type:'knockout',label:'League Phase Play-off - Leg 1',results:pending1.map(t=>({tie:t,leg:1}))};
+            renderTournament();renderLeaderboard();return;
+        }
+        const pending2=round.ties.filter(t=>t.leg2&&!t.leg2.played);
+        if(pending2.length){
+            pending2.forEach(t=>playLeg(t,2));
+            pending2.forEach(t=>finalizeTie(t));
+            competition.lastResults={type:'knockout',label:'League Phase Play-off - Leg 2',results:pending2.map(t=>({tie:t,leg:2}))};
+            renderTournament();renderLeaderboard();return;
+        }
+        if(round.ties.every(t=>t.winner)){
+            startKnockoutFromLeaguePlayoff();
+            renderTournament();renderLeaderboard();savePersistentState();return;
+        }
+        renderTournament();return;
+    }
+
+    const round=getCurrentRound();if(!round)return;
     const pendingLeg1=round.ties.filter(t=>!t.leg1.played);
-    if(pendingLeg1.length){
-        const results=[];
-        pendingLeg1.forEach(t=>{playLeg(t,1);if(!t.leg2)finalizeTie(t);results.push({tie:t,leg:1});});
-        competition.lastResults={type:'knockout',label:`${roundLabel(competition.stage)} - Leg 1`,results};
-        renderTournament();renderLeaderboard();return;
-    }
+    if(pendingLeg1.length){pendingLeg1.forEach(t=>playLeg(t,1));competition.lastResults={type:'knockout',label:`${roundLabel(competition.stage)} - Leg 1`,results:pendingLeg1.map(t=>({tie:t,leg:1}))};renderTournament();renderLeaderboard();return;}
     const pendingLeg2=round.ties.filter(t=>t.leg2&&!t.leg2.played);
-    if(pendingLeg2.length){
-        const results=[];
-        pendingLeg2.forEach(t=>{playLeg(t,2);finalizeTie(t);results.push({tie:t,leg:2});});
-        competition.lastResults={type:'knockout',label:`${roundLabel(competition.stage)} - Leg 2`,results};
+    if(pendingLeg2.length){pendingLeg2.forEach(t=>playLeg(t,2));pendingLeg2.forEach(finalizeTie);competition.lastResults={type:'knockout',label:`${roundLabel(competition.stage)} - Leg 2`,results:pendingLeg2.map(t=>({tie:t,leg:2}))};renderTournament();renderLeaderboard();return;}
+
+    if(competition.stage==='final'){
+        const finalTie=competition.final&&competition.final.ties&&competition.final.ties[0];
+        if(!finalTie)return;
+        if(!finalTie.leg1.played){
+            playLeg(finalTie,1);
+            finalizeTie(finalTie);
+            competition.lastResults={type:'knockout',label:'Champions League Final',results:[{tie:finalTie,leg:1}]};
+            if(finalTie.winner){
+                competition.champion=finalTie.winner;
+                const champ=teamById(finalTie.winner);
+                const runnerUp=finalTie.winner===finalTie.teamA?finalTie.teamB:finalTie.teamA;
+                if(champ)champ.furthestStage='winner';
+                if(teamById(runnerUp))teamById(runnerUp).furthestStage='final';
+                competition.stage='transfer_window';
+                viewStage='final';
+                archiveSeason();
+                savePersistentState();
+            }
+            renderTournament();renderLeaderboard();return;
+        }
+        if(!finalTie.winner)finalizeTie(finalTie);
+        if(finalTie.winner&&!competition.champion){
+            competition.champion=finalTie.winner;
+            teamById(finalTie.winner).furthestStage='winner';
+            const runnerUp=finalTie.winner===finalTie.teamA?finalTie.teamB:finalTie.teamA;
+            teamById(runnerUp).furthestStage='final';
+            competition.stage='transfer_window';viewStage='final';
+            archiveSeason();savePersistentState();
+        }
         renderTournament();renderLeaderboard();return;
     }
-    if(competition.stage==='q1'){
-        const winners=competition.q1.ties.map(t=>t.winner);const ties=[];
-        for(let i=0;i<winners.length;i+=2)ties.push(makeTie(winners[i],winners[i+1],false));
-        competition.q2={ties};competition.stage='q2';viewStage='q2';
-    } else if(competition.stage==='q2'){
-        const q2Winners=competition.q2.ties.map(t=>t.winner);
-        const pot4Defenders=shuffle(teamsData.filter(t=>t.pot===4).map(t=>t.id));
-        const shuffledQ2=shuffle(q2Winners);
-        const ties=shuffledQ2.map((w,i)=>makeTie(pot4Defenders[i],w,false));
-        competition.playoff={ties};competition.stage='playoff';viewStage='playoff';
-    } else if(competition.stage==='playoff'){
-        const pot4winners=competition.playoff.ties.map(t=>t.winner);
-        startGroupsFromPot4(pot4winners);
-    } else if(competition.stage==='r16'){
-        const winners=competition.r16.ties.map(t=>t.winner);const ties=[];
-        for(let i=0;i<winners.length;i+=2)ties.push(makeTie(winners[i],winners[i+1],false));
-        competition.qf={ties};competition.stage='qf';viewStage='qf';
-        winners.forEach(id=>teamById(id).furthestStage='qf');
+
+    if(competition.stage==='r16'){
+        const winners=competition.r16.ties.map(t=>t.winner);const ties=[];for(let i=0;i<winners.length;i+=2)ties.push(makeTie(winners[i],winners[i+1],false));
+        competition.qf={ties};competition.stage='qf';viewStage='qf';winners.forEach(id=>teamById(id).furthestStage='qf');
     } else if(competition.stage==='qf'){
-        const winners=competition.qf.ties.map(t=>t.winner);const ties=[];
-        for(let i=0;i<winners.length;i+=2)ties.push(makeTie(winners[i],winners[i+1],false));
-        competition.sf={ties};competition.stage='sf';viewStage='sf';
-        winners.forEach(id=>teamById(id).furthestStage='sf');
+        const winners=competition.qf.ties.map(t=>t.winner);const ties=[];for(let i=0;i<winners.length;i+=2)ties.push(makeTie(winners[i],winners[i+1],false));
+        competition.sf={ties};competition.stage='sf';viewStage='sf';winners.forEach(id=>teamById(id).furthestStage='sf');
     } else if(competition.stage==='sf'){
         const winners=competition.sf.ties.map(t=>t.winner);
-        competition.final={ties:[makeTie(winners[0],winners[1],true)]};competition.stage='final';viewStage='final';
-        winners.forEach(id=>teamById(id).furthestStage='final');
-    } else if(competition.stage==='final'){
-        const finalTie=competition.final.ties[0];
-        competition.champion=finalTie.winner;
-        teamById(finalTie.winner).furthestStage='winner';
-        const runnerUp=finalTie.winner===finalTie.teamA?finalTie.teamB:finalTie.teamA;
-        teamById(runnerUp).furthestStage='final';
-        competition.stage='transfer_window';viewStage='final';
-        archiveSeason();
+        competition.final={ties:[makeTie(winners[0],winners[1],true)]};competition.stage='final';viewStage='final';winners.forEach(id=>teamById(id).furthestStage='final');
     }
     renderTournament();renderLeaderboard();
 }
@@ -1453,7 +1843,37 @@ function computeChampionLineup(champTeam){
         return {name:p.name,pos:slots[i],ovr:p.ovr,goals:stat?stat.goals:0,assists:stat?stat.assists:0,isStar:p.isStar};
     });
 }
+function applySeasonOvrProgression(){
+    teamsData.forEach(team=>team.squad.forEach(player=>{
+        const stat=playerStats[player.id]||{};
+        const goals=stat.goals||0, assists=stat.assists||0;
+        const attackingPosition=['ST','LW','RW','CAM','LM','RM'].includes(player.pos);
+        const expected=attackingPosition?2:0;
+        const output=goals+assists*.55;
+        let delta=output>=expected+5?2:(output>=expected+2?1:(output<expected-2?-1:0));
+        if(player.pos==='GK'&&goals===0&&assists===0)delta=0;
+        if(team.furthestStage==='winner')delta+=1;
+        else if(team.furthestStage==='final')delta+=.5;
+        delta=Math.max(-2,Math.min(2,Math.round(delta)));
+        if(delta===0)return;
+        for(let i=0;i<Math.abs(delta);i++){
+            const statKey=delta>0?pickGrowthStat(player.pos,player):pick(['pac','sho','pas','dri','def','phy']);
+            player[statKey]=Math.max(35,Math.min(99,(player[statKey]||50)+(delta>0?1:-1)));
+        }
+        const oldOvr=player.ovr||60;
+        player.ovr=computeOvr(player);
+        player.matchStrength=clampNum(Math.round((player.matchStrength||player.ovr)*.72+player.ovr*.28),45,99);
+        if(!Array.isArray(player.ovrHistory))player.ovrHistory=[];
+        player.ovrHistory.push({season:currentSeason,ovr:player.ovr});
+        if(player.ovrHistory.length>40)player.ovrHistory.shift();
+        player.value=computePlayerValue(player,team);
+        if(player.ovr!==oldOvr)player.lastOvrChange=player.ovr-oldOvr;
+    }));
+}
 function archiveSeason(){
+    applySeasonOvrProgression();
+    updateAllStarStatuses();
+    teamsData.forEach(evolveClubPower);
     const stats=Object.values(playerStats);
     const scorers=[...stats].sort((a,b)=>b.goals-a.goals||b.assists-a.assists).filter(s=>s.goals>0).slice(0,10);
     const assisters=[...stats].sort((a,b)=>b.assists-a.assists||b.goals-a.goals).filter(s=>s.assists>0).slice(0,10);
@@ -1462,6 +1882,12 @@ function archiveSeason(){
     Object.values(potsScores).forEach(p=>{if(p.teamId===competition.champion)p.score+=5;});
     const potsList=[...Object.values(potsScores)].sort((a,b)=>b.score-a.score);
     const potsWinner=potsList.length?potsList[0]:null;
+    teamsData.filter(t=>t.id!=='free_agents').forEach(t=>{
+        const h=ensureClubHistoryEntry(t);
+        h.seasons++;
+        if(t.id===competition.champion){h.titles++;h.finals++;}
+        else if(t.furthestStage==='final'){h.finals++;h.finalsLost++;}
+    });
     seasonHistory.push({season:currentSeason,championId:competition.champion,championName:champTeam.name,scorers,assisters,startingXI,potsWinner});
 }
 
@@ -1495,6 +1921,21 @@ function allSellablePlayers(){
         });
     });
     return list;
+}
+function ensureEliteMarketTalent(){
+    const pool=teamById('free_agents');
+    if(!pool)return false;
+    const elite=pool.squad.filter(p=>p.age<=24&&p.ovr>=84);
+    const needed=Math.max(0,24-elite.length);
+    for(let i=0;i<needed;i++){
+        const pos=pick(['ST','ST','LW','RW','CAM','CM','CB','GK']);
+        const base=randInt(94,95);
+        const player=generatePlayer(pos,base,true,0,{ceiling:95,floor:84});
+        player.value=computePlayerValue(player,pool);
+        ensurePlayerPerformanceData(player);
+        pool.squad.push(player);
+    }
+    return needed>0;
 }
 function weakestSlot(team){
     const slots=getFormationDefinition(team.formation).slots;
@@ -1607,6 +2048,9 @@ function processAgingAndRetirement(){
         const survivors=[];
         team.squad.forEach(p=>{
             p.age++;
+            ensurePlayerPerformanceData(p);
+            p.experience=clampNum((p.experience||0)+6,0,100);
+            p.consistency=clampNum(Math.round((p.consistency||55)*0.94+(p.age>=24?78:58)*0.06),45,94);
             if(p.peakAge===undefined){
                 p.peakAge=Math.max(p.age+3,randInt(25,34));
                 p.peakUntil=p.peakAge+randInt(3,8);
@@ -1647,8 +2091,12 @@ function processAgingAndRetirement(){
         });
         const retiredCount=team.squad.length-survivors.length;
         for(let i=0;i<retiredCount;i++){
-            const np=generatePlayer(pick(SQUAD_TEMPLATE),team.pot<=2?78:68,true);
+            const currentPower=Math.round(getDynamicTeamStrength(team));
+            const youthBase=clampNum(Math.round(currentPower-randInt(5,12)),54,92);
+            const youthProfile={pot:team.pot,ceiling:Math.min(team.playerCeiling||99,(POT_PLAYER_CAPS[team.pot]||POT_PLAYER_CAPS[5]).ceiling),floor:Math.max(54,Math.round(youthBase-10))};
+            const np=generatePlayer(pick(SQUAD_TEMPLATE),youthBase,true,0,youthProfile);
             np.value=computePlayerValue(np,team);
+            ensurePlayerPerformanceData(np);
             survivors.push(np);
         }
         team.squad=survivors;
@@ -1665,6 +2113,7 @@ function beginNextSeason(){
     teamsData.forEach(t=>{if(t.id!==managedTeamId&&t.id!=='free_agents')arrangeBestXIForTeam(t);});
     currentSeason++;
     startSeason();
+    generateIncomingOffers();
     loadTeamData();
     if(alwaysBestXI)autoArrangeFormation(true);
     updateManagedStrip();
@@ -1708,7 +2157,7 @@ function renderTransferMarket(){
             <td>${actionHtml}</td></tr>`;
     }).join('');
     document.getElementById('market-note').textContent=filtered.length>200?`Showing top 200 of ${filtered.length} matching players. Refine your search to narrow further.`:`${filtered.length} players match your filters.`;
-    renderBudgetStrip();renderPendingList();
+    renderBudgetStrip();renderPendingList();renderIncomingOffers();
 }
 function toggleListing(playerId){
     if(favoritePlayers.has(playerId))return;
@@ -1733,7 +2182,69 @@ function switchTransfersView(view,evt){
     evt.target.classList.add('active');
     document.getElementById('transfers-market-view').style.display=view==='market'?'block':'none';
     document.getElementById('transfers-manager-view').style.display=view==='manager'?'block':'none';
+    document.getElementById('transfers-offers-view').style.display=view==='offers'?'block':'none';
     if(view==='manager')renderPlayerManager();
+    if(view==='offers')renderIncomingOffers();
+}
+function generateIncomingOffers(){
+    const managed=getActiveTeam();if(!managed)return;
+    if(transferQueue.incomingOfferSeason===currentSeason)return;
+    transferQueue.incomingOffers=[];
+    const buyers=shuffle(teamsData.filter(t=>t.id!==managedTeamId&&t.id!=='free_agents'));
+    const available=shuffle(managed.squad.filter(p=>p.pos!=='GK'&&!favoritePlayers.has(p.id)));
+    // Several clubs can target the same player. This creates real bidding situations instead of one-off bids.
+    const targetCount=Math.min(5,Math.max(2,Math.floor(managed.squad.length/5)));
+    available.slice(0,targetCount).forEach(player=>{
+        const affordable=buyers.filter(t=>t.budget>=player.value*.70);
+        const buyerCount=Math.min(3,Math.max(1,Math.floor(Math.random()*3)+1));
+        shuffle(affordable).slice(0,buyerCount).forEach(buyer=>{
+            const premium=player.age<=24?1.10:(player.age>=31?.90:1.0);
+            const price=Math.max(.5,Math.round(player.value*premium*(.94+Math.random()*.14)*10)/10);
+            transferQueue.incomingOffers.push({
+                id:`${currentSeason}-${player.id}-${buyer.id}-${Math.floor(Math.random()*99999)}`,
+                playerId:player.id,buyerId:buyer.id,price
+            });
+        });
+    });
+    transferQueue.incomingOfferSeason=currentSeason;
+}
+function renderIncomingOffers(){
+    const list=document.getElementById('incoming-offers-list');
+    const count=document.getElementById('incoming-offer-count');
+    const offers=transferQueue.incomingOffers||[];
+    if(count)count.textContent=offers.length?` (${offers.length})`:'';
+    if(!list)return;
+    list.innerHTML=offers.length?offers.map(o=>{
+        const player=getActiveTeam().squad.find(p=>p.id===o.playerId);
+        const buyer=teamById(o.buyerId);
+        if(!player||!buyer)return '';
+        return `<div class="pending-item"><span><strong>${buyer.name}</strong> offer ${fmtMoney(o.price)} for ${player.name} (${player.pos}, OVR ${player.ovr})</span><span style="display:flex;gap:6px;"><button class="btn btn-sm btn-green" onclick="acceptIncomingOffer('${o.id}')">Accept</button><button class="btn btn-sm btn-ghost" onclick="declineIncomingOffer('${o.id}')">Decline</button></span></div>`;
+    }).join(''):'<p style="color:var(--text-dim);font-size:.82rem;">No incoming offers right now. Clubs reassess their targets each season.</p>';
+}
+function acceptIncomingOffer(offerId){
+    const managed=getActiveTeam();
+    const index=(transferQueue.incomingOffers||[]).findIndex(o=>o.id===offerId);
+    if(index===-1)return;
+    const offer=transferQueue.incomingOffers[index];
+    const player=managed.squad.find(p=>p.id===offer.playerId);
+    const buyer=teamById(offer.buyerId);
+    if(!player||!buyer){declineIncomingOffer(offerId);return;}
+    if(buyer.budget<offer.price){declineIncomingOffer(offerId);return;}
+    managed.squad=managed.squad.filter(p=>p.id!==player.id);
+    buyer.squad.push(player);
+    buyer.budget=Math.round((buyer.budget-offer.price)*10)/10;
+    managed.budget=Math.round((managed.budget+offer.price)*10)/10;
+    player.value=computePlayerValue(player,buyer);
+    addClubToPlayerHistory(player,buyer);
+    transferLog.push(`${buyer.name} signed ${player.name} from you for ${fmtMoney(offer.price)}`);
+    transferQueue.incomingOffers=transferQueue.incomingOffers.filter(o=>o.playerId!==player.id);
+    ensurePlayerMetadata();loadTeamData();renderTransferMarket();renderIncomingOffers();savePersistentState();
+}
+function declineIncomingOffer(offerId){
+    const index=(transferQueue.incomingOffers||[]).findIndex(o=>o.id===offerId);
+    if(index===-1)return;
+    transferQueue.incomingOffers.splice(index,1);
+    renderIncomingOffers();savePersistentState();
 }
 function renderPlayerManager(){
     const tbody=document.getElementById('player-manager-table');
@@ -1969,6 +2480,13 @@ function startWatchUpcoming(key){
             commitGroupFixtureResult(d.letter,d.fixture,r);
             checkGroupMatchdayComplete();
         });
+    } else if(d.type==='league'){
+        const home=teamById(d.fixture.home),away=teamById(d.fixture.away);
+        const r=simulateMatch(home,away,{importance:1.15});
+        openWatcher(d.fixture.home,d.fixture.away,r.events,null,()=>{
+            commitLeagueFixtureResult(d.fixture,r);
+            renderTournament();renderLeaderboard();
+        });
     } else if(d.type==='leg'){
         const{r,homeObj,awayObj}=computeLegForWatch(d.tie,d.legNum);
         openWatcher(homeObj.id,awayObj.id,r.events,null,()=>{
@@ -2055,13 +2573,27 @@ function renderPensHtml(pens,teamAObj,teamBObj){
     }).join('');
     return html;
 }
+function getCompetitionStageData(stageKey){
+    const map={
+        q1:'q1',
+        q2:'q2',
+        playoff:'playoff',
+        league:'league',
+        league_playoff:'leaguePlayoff',
+        r16:'r16',
+        qf:'qf',
+        sf:'sf',
+        final:'final'
+    };
+    return competition ? competition[map[stageKey]] : null;
+}
 function renderTournament(){renderRoundNav();renderChampionBanner();renderTransferWindowSlot();renderSimButton();renderStageDetail();renderResultFeed();}
 function renderRoundNav(){
     const nav=document.getElementById('round-nav');
-    const stages=[['q1','Qualifying R1'],['q2','Qualifying R2'],['playoff','Play-off'],['groups','Group Stage'],['r16','Round of 16'],['qf','Quarter-Finals'],['sf','Semi-Finals'],['final','Final']];
+    const stages=[['q1','Qualifying R1'],['q2','Qualifying R2'],['playoff','Qualifying Play-off'],['league','League Phase'],['league_playoff','League Play-off'],['r16','Round of 16'],['qf','Quarter-Finals'],['sf','Semi-Finals'],['final','Final']];
     nav.innerHTML='';
     stages.forEach(([key,label])=>{
-        const reached=competition[key]!==null&&competition[key]!==undefined;
+        const reached=getCompetitionStageData(key)!==null&&getCompetitionStageData(key)!==undefined;
         const btn=document.createElement('button');
         btn.textContent=label;btn.disabled=!reached;
         btn.className=viewStage===key?'active':'';
@@ -2090,7 +2622,16 @@ function renderSimButton(){
     const btn=document.getElementById('sim-btn');const heading=document.getElementById('round-heading');
     if(competition.stage==='transfer_window'){btn.style.display='none';heading.textContent=`Season ${currentSeason} Complete`;return;}
     btn.style.display='block';
-    if(competition.stage==='groups'){
+    if(competition.stage==='league'){
+        btn.textContent=`Simulate Matchday ${competition.leagueMatchday}`;
+        heading.textContent=`Season ${currentSeason} - League Phase - Matchday ${competition.leagueMatchday} of 8`;
+    } else if(competition.stage==='league_playoff'){
+        const round=competition.leaguePlayoff;
+        const leg1Done=round&&round.ties&&round.ties.every(t=>t.leg1.played);
+        const tiesDone=round&&round.ties&&round.ties.every(t=>t.winner);
+        btn.textContent=tiesDone?'Advance to Round of 16':(leg1Done?'Play League Play-off - Leg 2':'Play League Play-off - Leg 1');
+        heading.textContent=`Season ${currentSeason} - League Phase Play-off`;
+    } else if(competition.stage==='groups'){
         btn.textContent=`Simulate Matchday ${competition.currentMatchday}`;
         heading.textContent=`Season ${currentSeason} - Group Stage - Matchday ${competition.currentMatchday} of 6`;
     } else if(competition.stage==='knockout_draw_pending'){
@@ -2104,13 +2645,23 @@ function renderSimButton(){
         else btn.textContent=`Advance to Next Round`;
         heading.textContent=`Season ${currentSeason} - ${roundLabel(competition.stage)}`;
     }
-    if(competition.stage!=='transfer_window')viewStage=competition.stage==='knockout_draw_pending'?'groups':competition.stage;
+    if(competition.stage!=='transfer_window' && !viewStage){
+        viewStage=competition.stage==='knockout_draw_pending'?'groups':competition.stage;
+    }
 }
 function renderStageDetail(){
     const container=document.getElementById('stage-detail');container.innerHTML='';
-    if(viewStage==='groups'){renderGroupsView(container);}
-    else if(competition[viewStage]){renderKnockoutView(container,viewStage);}
-    else{container.innerHTML='<p style="color:var(--text-dim);font-size:.85rem;">Nothing to show yet.</p>';}
+    if(viewStage==='league'){
+        renderLeagueView(container);
+    }else if(viewStage==='league_playoff'){
+        renderKnockoutView(container,'league_playoff');
+    }else if(viewStage==='groups'){
+        renderGroupsView(container);
+    }else if(getCompetitionStageData(viewStage)){
+        renderKnockoutView(container,viewStage);
+    }else{
+        container.innerHTML='<p style="color:var(--text-dim);font-size:.85rem;">Nothing to show yet.</p>';
+    }
 }
 function renderGroupsView(container){
     if(!competition.groups){container.innerHTML='<p style="color:var(--text-dim);font-size:.85rem;">Groups have not been drawn yet - complete qualifying first.</p>';return;}
@@ -2158,9 +2709,142 @@ function renderGroupsView(container){
     });
     container.appendChild(wrap);
 }
+function renderLeagueView(container){
+    if(!competition.leagueTeams||!competition.leagueFixtures){
+        container.innerHTML='<p style="color:var(--text-dim);font-size:.85rem;">League phase has not started yet.</p>';
+        return;
+    }
+
+    const fixtures=competition.leagueFixtures;
+    const matchdays=[...new Set(fixtures.map(f=>f.matchday))].sort((a,b)=>a-b);
+    const currentMd=Math.max(1,Math.min(competition.leagueMatchday||1,8));
+    let selectedMd=window.uclLeagueViewMatchday||currentMd;
+    if(!matchdays.includes(selectedMd))selectedMd=matchdays[matchdays.length-1]||1;
+    window.uclLeagueViewMatchday=selectedMd;
+
+    const tabs=document.createElement('div');
+    tabs.className='panel';
+    tabs.style.marginBottom='16px';
+    const tabButtons=matchdays.map(md=>{
+        const played=fixtures.some(f=>f.matchday===md&&f.played);
+        const active=md===selectedMd;
+        return `<button class="btn ${active?'btn-gold':'btn-ghost'} btn-sm" style="margin:3px;" onclick="window.uclLeagueViewMatchday=${md};renderTournament();">
+            Matchday ${md}${played?' ✓':''}
+        </button>`;
+    }).join('');
+    tabs.innerHTML=`<h2>League Phase Matches</h2>
+        <p style="color:var(--text-muted);font-size:.8rem;margin-top:-6px;">
+            Browse every league-phase matchday. Completed matches remain available after advancing to the play-off.
+        </p>
+        <div style="display:flex;flex-wrap:wrap;">${tabButtons}</div>`;
+    container.appendChild(tabs);
+
+    const mdFixtures=fixtures.filter(f=>f.matchday===selectedMd);
+    const played=mdFixtures.filter(f=>f.played);
+    const upcoming=mdFixtures.filter(f=>!f.played);
+
+    const box=document.createElement('div');
+    box.className='panel';
+    box.innerHTML=`<h2>Matchday ${selectedMd}</h2>
+        <p style="color:var(--text-muted);font-size:.78rem;">
+            ${played.length} played · ${upcoming.length} remaining
+        </p>`;
+
+    mdFixtures.forEach(f=>{
+        const h=teamById(f.home),a=teamById(f.away);
+        const isYours=f.home===managedTeamId||f.away===managedTeamId;
+        const row=document.createElement('div');
+        row.className='result-block';
+        row.style.marginBottom='7px';
+
+        if(f.played){
+            const key='lf'+(detailCounter++);
+            watcherStore[key]={
+                homeTeamId:f.home,
+                awayTeamId:f.away,
+                events:f.events||[],
+                tie:null
+            };
+            row.innerHTML=`<div class="result-row ${isYours?'your-row':''}">
+                <div class="result-teams" onclick="toggleDetail('${key}')">${dot(h.color)}<span>${h.name}</span></div>
+                <div class="result-score">${f.scoreHome} - ${f.scoreAway}</div>
+                <div class="result-teams" style="justify-content:flex-end;" onclick="toggleDetail('${key}')"><span>${a.name}</span>${dot(a.color)}</div>
+                <button class="btn btn-sm btn-ghost" style="margin-left:8px;" onclick="event.stopPropagation();openWatcherFromKey('${key}')">▶ Watch</button>
+            </div>
+            <div class="match-detail" id="detail-${key}" style="display:none">${renderTimelineHtml(f.events||[])}</div>`;
+        }else{
+            const isCurrent=selectedMd===competition.leagueMatchday;
+            const key='lpw'+(detailCounter++);
+            pendingWatchStore[key]={type:'league',fixture:f};
+            row.innerHTML=`<div class="result-row ${isYours?'your-row':''}">
+                <div class="result-teams">${dot(h.color)}<span>${h.name}</span></div>
+                <div class="result-score">vs</div>
+                <div class="result-teams" style="justify-content:flex-end;"><span>${a.name}</span>${dot(a.color)}</div>
+                ${isCurrent?`<button class="btn btn-sm btn-gold" style="margin-left:8px;" onclick="startWatchUpcoming('${key}')">▶ Watch</button>`:'<span style="color:var(--text-dim);font-size:.75rem;margin-left:8px;">Upcoming</span>'}
+            </div>`;
+        }
+        box.appendChild(row);
+    });
+    container.appendChild(box);
+
+    const standings=computeLeagueStandings();
+    const rows=standings.map((r,i)=>{
+        const t=teamById(r.id);
+        const cls=i<8?'row-qualify':'';
+        const label=i<8?'R16':(i<24?'Play-off':'OUT');
+        return `<tr class="${cls}">
+            <td>${i+1}</td>
+            <td><div class="team-name-cell">${dot(t.color)}${t.name}${t.id===managedTeamId?'<span class="you-tag">YOU</span>':''}</div></td>
+            <td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td>
+            <td>${r.gd>0?'+':''}${r.gd}</td><td><strong>${r.pts}</strong></td>
+            <td><span class="badge ${i<8?'high':i<24?'med':'low'}">${label}</span></td>
+        </tr>`;
+    }).join('');
+    const wrap=document.createElement('div');
+    wrap.className='panel';
+    wrap.innerHTML=`<h2>36-Team League Table</h2>
+        <p style="color:var(--text-muted);font-size:.78rem;margin-top:-6px;">
+            Top 8 qualify directly for the Round of 16 · 9-24 enter the play-off · 25-36 are eliminated.
+        </p>
+        <div style="max-height:600px;overflow-y:auto;">
+            <table><thead><tr><th>#</th><th>Club</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th><th>Status</th></tr></thead>
+            <tbody>${rows}</tbody></table>
+        </div>`;
+    container.appendChild(wrap);
+}
 function renderKnockoutView(container,stageKey){
-    const round=competition[stageKey];
-    if(!round){container.innerHTML='<p style="color:var(--text-dim);font-size:.85rem;">This round has not been reached yet.</p>';return;}
+    const round=getCompetitionStageData(stageKey);
+    if(!round){
+        container.innerHTML=`<div class="panel">
+            <h2>${stageKey==='league_playoff'?'League Phase Play-off':'Tournament Round'}</h2>
+            <p style="color:var(--text-dim);font-size:.85rem;">This round has not been reached yet.</p>
+        </div>`;
+        return;
+    }
+
+    if(stageKey==='league_playoff'){
+        const allDone=round.ties.length>0&&round.ties.every(t=>t.winner);
+        const header=document.createElement('div');
+        header.className='panel';
+        header.style.marginBottom='16px';
+        header.innerHTML=`<h2>League Phase Play-off</h2>
+            <p style="color:var(--text-muted);font-size:.82rem;margin:0 0 10px;">
+                Places 9-24 compete over two legs. The eight winners join the top eight league-phase clubs in the Round of 16.
+            </p>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                <span class="badge ${allDone?'high':'med'}">${allDone?'8 TIES DECIDED':'TWO-LEGGED PLAY-OFF'}</span>
+                <span style="color:var(--text-dim);font-size:.78rem;">${round.ties.filter(t=>t.leg1.played).length}/8 first legs · ${round.ties.filter(t=>t.leg2&&t.leg2.played).length}/8 second legs</span>
+            </div>`;
+        container.appendChild(header);
+        const note=document.createElement('div');
+        note.className='panel';
+        note.style.marginBottom='16px';
+        note.innerHTML=allDone
+            ? `<strong>✅ Play-off complete.</strong><span style="color:var(--text-muted);margin-left:8px;">Use the main tournament button above to advance to the Round of 16.</span>`
+            : `<strong>📅 Play-off fixtures</strong><span style="color:var(--text-muted);margin-left:8px;">Play Leg 1, then Leg 2. Every tie and result is shown below.</span>`;
+        container.appendChild(note);
+    }
+
     round.ties.forEach(tie=>{
         const tA=teamById(tie.teamA),tB=teamById(tie.teamB);
         const isManaged=tie.teamA===managedTeamId||tie.teamB===managedTeamId;
@@ -2244,7 +2928,15 @@ function renderResultFeed(){
     const lr=competition.lastResults;
     if(!lr){feed.innerHTML='<p style="color:var(--text-dim);font-size:.85rem;">Kick off the competition to see results here.</p>';return;}
     feed.innerHTML=`<div class="feed-heading">${lr.label}</div>`;
-    if(lr.type==='group'){
+    if(lr.type==='league'){
+        const yours=lr.results.filter(r=>r.home===managedTeamId||r.away===managedTeamId);
+        const others=lr.results.filter(r=>r.home!==managedTeamId&&r.away!==managedTeamId);
+        [...yours,...others].forEach(r=>{
+            const h=teamById(r.home),a=teamById(r.away);const isYours=r.home===managedTeamId||r.away===managedTeamId;
+            const key='f'+(detailCounter++);watcherStore[key]={homeTeamId:r.home,awayTeamId:r.away,events:r.events,tie:null};
+            feed.innerHTML+=`<div class="result-block"><div class="result-row ${isYours?'your-row':''}"><div class="result-teams" onclick="toggleDetail('${key}')">${dot(h.color)}<span>${h.name}</span></div><div class="result-score">${r.scoreHome} - ${r.scoreAway}</div><div class="result-teams" style="justify-content:flex-end;" onclick="toggleDetail('${key}')"><span>${a.name}</span>${dot(a.color)}</div><button class="btn btn-sm btn-ghost" style="margin-left:8px;" onclick="event.stopPropagation();openWatcherFromKey('${key}')">▶ Watch</button></div><div class="match-detail" id="detail-${key}" style="display:none">${renderTimelineHtml(r.events)}</div></div>`;
+        });
+    } else if(lr.type==='group'){
         const yours=lr.results.filter(r=>r.home===managedTeamId||r.away===managedTeamId);
         const others=lr.results.filter(r=>r.home!==managedTeamId&&r.away!==managedTeamId);
         [...yours,...others].forEach(r=>{
@@ -2301,6 +2993,7 @@ function renderResultFeed(){
     }
 }
 function renderLeaderboard(){
+    teamsData.filter(t=>t.id!=='free_agents').forEach(ensureClubHistoryEntry);
     const sel=document.getElementById('season-select');
     const priorOptions=sel.value;
     sel.innerHTML='';
@@ -2367,6 +3060,24 @@ function renderLeaderboard(){
     }).join(''):'<tr><td colspan="4" style="color:var(--text-dim);">No assists recorded yet.</td></tr>';
 }
 
+function toggleClubHistory(){
+    const panel=document.getElementById('club-history-panel');
+    if(!panel)return;
+    panel.style.display=panel.style.display==='none'?'block':'none';
+    if(panel.style.display==='block')renderClubHistory();
+}
+function renderClubHistory(){
+    const tbody=document.getElementById('club-history-table');if(!tbody)return;
+    const q=(document.getElementById('club-history-search')?.value||'').toLowerCase();
+    const sort=document.getElementById('club-history-sort')?.value||'titles';
+    const rows=teamsData.filter(t=>t.id!=='free_agents').map(t=>{
+        const h=ensureClubHistoryEntry(t);return {t,h};
+    }).filter(x=>x.t.name.toLowerCase().includes(q));
+    const keyMap={titles:'titles',goals:'uclGoals',finals:'finalsMade',lost:'finalsLost',appearances:'seasons'};
+    const key=keyMap[sort]||'titles';
+    rows.sort((a,b)=>(b.h[key]||0)-(a.h[key]||0)||(b.h.titles||0)-(a.h.titles||0)||a.t.name.localeCompare(b.t.name));
+    tbody.innerHTML=rows.map((x,i)=>`<tr><td class="lb-rank">${i+1}</td><td><div class="team-name-cell">${dot(x.t.color)}<strong>${x.t.name}</strong></div></td><td><strong>${x.h.titles||0}</strong></td><td>${x.h.uclGoals||0}</td><td>${x.h.finalsMade||x.h.finals||0}</td><td>${x.h.finalsLost||0}</td><td>${x.h.seasons||0}</td></tr>`).join('');
+}
 function getValueClass(val){if(val>=85)return 'high';if(val>=75)return 'med';return 'low';}
 function getCardTier(ovr){
     if(ovr>=85)return{cls:'elite',label:'ELITE'};
@@ -2426,12 +3137,34 @@ function switchTab(tabId,evt){
     if(tabId==='leaderboard')renderLeaderboard();
     if(tabId==='transfers'){renderTransferMarket();renderPlayerManager();}
     if(tabId==='search')renderPlayerSearch();
+    if(tabId==='scouting')renderScouting();
 }
-window.onload=initApp;
+function renderScouting(){
+    const tbody=document.getElementById('scouting-table');
+    const note=document.getElementById('scouting-note');
+    if(!tbody)return;
+    const prospects=[];
+    teamsData.filter(t=>t.id!==managedTeamId&&t.id!=='free_agents').forEach(team=>team.squad.forEach(player=>{
+        const room=(player.pot||player.ovr)-player.ovr;
+        if(player.age<=23&&room>=5)prospects.push({player,team,room});
+    }));
+    prospects.sort((a,b)=>b.player.ovr-a.player.ovr||b.room-a.room);
+    note.textContent=`${prospects.length} young prospects found. Projection ranges are deliberately uncertain and may improve or disappoint.`;
+    tbody.innerHTML=prospects.slice(0,150).map(({player,team,room})=>{
+        const low=Math.min(99,player.ovr+Math.max(3,Math.round(room*.35)));
+        const scoutingNoise=((Number(player.id)||0)+currentSeason)%4-1;
+        const high=Math.min(99,player.ovr+Math.max(6,Math.round(room*.85))+scoutingNoise);
+        const asking=Math.max(player.value,Math.round(player.value*(1.08+(room*.012))*10)/10);
+        return `<tr><td><strong>${player.name}</strong></td><td>${dot(team.color)} ${team.name}</td><td>${player.pos}</td><td>${player.age}</td><td><span class="badge ${getValueClass(player.ovr)}">${player.ovr}</span></td><td>${low}-${Math.max(low,high)}</td><td>${fmtMoney(asking)}</td></tr>`;
+    }).join('')||'<tr><td colspan="7" style="color:var(--text-dim);">No high-upside young players currently identified.</td></tr>';
+}
+// Startup is initialized once at the bottom after all save functions exist.
+
 
 // ==================== REALISM / CAREER ARCHIVE / AUTOSAVE UPGRADE ====================
-const SAVE_KEY='ucl_manager_realism_save_v4';
-const LEGACY_SAVE_KEY='ucl_manager_realism_save_v3';
+const SAVE_KEY='ucl_manager_realism_save_v6';
+const LEGACY_SAVE_KEY='ucl_manager_realism_save_v5';
+const LEGACY_SAVE_KEY_2='ucl_manager_realism_save_v4';
 let saveTimer=null;
 let lastSaveAt=0;
 function clampNum(v,min,max){return Math.max(min,Math.min(max,v));}
@@ -2439,7 +3172,10 @@ function ensurePlayerMetadata(){
     teamsData.forEach(team=>{
         if(!team.squad)team.squad=[];
         if(team.playerCeiling===undefined)team.playerCeiling=Math.max(...team.squad.map(p=>p.ovr||0),60);
+        if(team.clubReputation===undefined)team.clubReputation=clampNum(calcSquadAvg(team),35,95);
+        if(team.dynamicPower===undefined)team.dynamicPower=team.clubReputation;
         team.squad.forEach(p=>{
+            ensurePlayerPerformanceData(p);
             if(!p.clubHistory)p.clubHistory=[team.name];
             else if(p.clubHistory.length===0)p.clubHistory=[team.name];
             if(p.clubHistory[p.clubHistory.length-1]!==team.name)p.clubHistory.push(team.name);
@@ -2473,9 +3209,10 @@ function archiveRetiredPlayer(p,team){
 function getAllArchivedPlayers(){return Object.values(retiredPlayers||{});}
 function savePersistentState(){
     try{
+        if(!managedTeamId||!getActiveTeam())return false;
         ensurePlayerMetadata();
         const payload={
-            version:4,savedAt:Date.now(),nextPlayerId,managedTeamId,teamsData,playerStats,potsScores,careerStats,
+            version:6,savedAt:Date.now(),nextPlayerId,managedTeamId,teamsData,playerStats,potsScores,careerStats,
             retiredPlayers,playerTrophies,clubAllTimeStats,currentSeason,seasonHistory,transferQueue,transferLog,
             autoManagerEnabled,favoritePlayers:[...favoritePlayers],alwaysBestXI,competition,viewStage,tieCounter
         };
@@ -2483,13 +3220,14 @@ function savePersistentState(){
         lastSaveAt=Date.now();
         const pill=document.getElementById('autosave-pill');
         if(pill)pill.textContent='Autosaved '+new Date(lastSaveAt).toLocaleTimeString();
-    }catch(e){console.warn('Autosave failed',e);}
+        return true;
+    }catch(e){console.warn('Autosave failed',e);return false;}
 }
 function loadPersistentState(){
     try{
         // Never let a broken/empty old save replace the built-in 64-club database.
         // v4 is the current format; v3 is accepted only when it contains a real club database.
-        const raw=localStorage.getItem(SAVE_KEY)||localStorage.getItem(LEGACY_SAVE_KEY);
+        const raw=localStorage.getItem(SAVE_KEY)||localStorage.getItem(LEGACY_SAVE_KEY)||localStorage.getItem(LEGACY_SAVE_KEY_2);
         if(!raw)return false;
         const d=JSON.parse(raw);
         if(!d||d.version<1||!Array.isArray(d.teamsData)||d.teamsData.length<60)return false;
@@ -2499,12 +3237,16 @@ function loadPersistentState(){
         managedTeamId=d.managedTeamId||null; nextPlayerId=d.nextPlayerId||nextPlayerId;
         playerStats=d.playerStats||{};potsScores=d.potsScores||{};careerStats=d.careerStats||{};retiredPlayers=d.retiredPlayers||{};
         playerTrophies=d.playerTrophies||{};clubAllTimeStats=d.clubAllTimeStats||{};currentSeason=d.currentSeason||1;
-        seasonHistory=d.seasonHistory||[];transferQueue=d.transferQueue||{offers:[],listings:[]};transferLog=d.transferLog||[];
+        teamsData.filter(t=>t.id!=='free_agents').forEach(ensureClubHistoryEntry);
+        seasonHistory=d.seasonHistory||[];transferQueue=d.transferQueue||{};transferQueue.offers=Array.isArray(transferQueue.offers)?transferQueue.offers:[];transferQueue.listings=Array.isArray(transferQueue.listings)?transferQueue.listings:[];transferQueue.incomingOffers=Array.isArray(transferQueue.incomingOffers)?transferQueue.incomingOffers:[];transferLog=d.transferLog||[];
         autoManagerEnabled=!!d.autoManagerEnabled;favoritePlayers=new Set(d.favoritePlayers||[]);alwaysBestXI=!!d.alwaysBestXI;
         competition=d.competition||null;viewStage=d.viewStage||null;tieCounter=d.tieCounter||1;
+        // Older careers used the old group-stage format. Keep their squads/archives, but start the next UCL season on the new 36-team format.
+        if(competition&&(competition.stage==='groups'||competition.stage==='knockout_draw_pending')){competition=null;viewStage=null;}
         ensurePlayerMetadata();
-        // If we loaded the legacy v3 save, immediately upgrade it to v4.
-        if(!localStorage.getItem(SAVE_KEY)) savePersistentState();
+        const marketRepaired=ensureEliteMarketTalent();
+        // Upgrade older saves into the current v6 format.
+        if(marketRepaired||!localStorage.getItem(SAVE_KEY)) savePersistentState();
         return true;
     }catch(e){console.warn('Save load failed',e);return false;}
 }
@@ -2579,6 +3321,39 @@ function enforceGeneratedClubCeiling(team){
         p.pot=Math.min(ceiling,Math.max(p.pot||p.ovr,p.ovr));
     });
 }
+function maintainYouthPipeline(team){
+    if(!team||team.id==='free_agents')return;
+    const under23=team.squad.filter(p=>(p.age||18)<=23).length;
+    const eliteYouth=team.squad.filter(p=>(p.age||18)<=23&&p.ovr>=(team.pot<=1?86:(team.pot===2?83:80))).length;
+    const intake=under23<3?2:(under23<6?1:0);
+    for(let i=0;i<intake;i++){
+        const base=clampNum(Math.round((team.dynamicPower||team.teamStrength||68)-randInt(1,3)),58,93);
+        const cap=Math.min(team.playerCeiling||95,(POT_PLAYER_CAPS[team.pot]||POT_PLAYER_CAPS[5]).ceiling);
+        const profile={ceiling:cap,floor:Math.max(56,base-5),pot:team.pot};
+        const player=generatePlayer(pick(SQUAD_TEMPLATE),base,true,0,profile);
+        player.value=computePlayerValue(player,team);
+        player.clubHistory=[team.name];
+        player.ovrHistory=[{season:currentSeason,ovr:player.ovr}];
+        team.squad.push(player);
+        transferLog.push(`${team.name} promoted ${player.name} from the academy (OVR ${player.ovr}).`);
+    }
+    if(eliteYouth===0&&team.pot<=3){
+        const target=team.pot===1?90:(team.pot===2?86:82);
+        const cap=Math.min(team.playerCeiling||95,(POT_PLAYER_CAPS[team.pot]||POT_PLAYER_CAPS[5]).ceiling);
+        const player=generatePlayer(pick(['ST','LW','RW','CAM','CM','CB','GK']),target,true,0,{ceiling:cap,floor:Math.min(cap,target-1),pot:team.pot});
+        player.value=computePlayerValue(player,team);player.clubHistory=[team.name];player.ovrHistory=[{season:currentSeason,ovr:player.ovr}];team.squad.push(player);
+        transferLog.push(`${team.name} promoted elite academy prospect ${player.name} (OVR ${player.ovr}).`);
+    }
+    if(team.squad.length>22){
+        const starters=new Set(bestElevenIds(team));
+        const expendable=team.squad.filter(p=>!starters.has(p.id)&&p.age>=29).sort((a,b)=>a.ovr-b.ovr);
+        while(team.squad.length>22&&expendable.length){
+            const released=expendable.shift();
+            team.squad=team.squad.filter(p=>p.id!==released.id);
+            transferLog.push(`${released.name} left ${team.name} after academy promotion.`);
+        }
+    }
+}
 // Replace the season-development/retirement pass with a deeper model and permanent archive.
 function processAgingAndRetirement(){
     const retireLog=[];
@@ -2598,16 +3373,17 @@ function processAgingAndRetirement(){
             }else survivors.push(p);
         });
         team.squad=survivors;
-        const targetBase=team.teamStrength||beforeBest||70;
+        const targetBase=Math.round(team.dynamicPower||team.teamStrength||beforeBest||70);
         const generationProfile=team.playerCeiling!==undefined?{ceiling:team.playerCeiling,floor:Math.max(58,(team.playerCeiling||targetBase)-12)}:undefined;
         if(team.squad.length<22){
             const missing=22-team.squad.length;
             for(let i=0;i<missing;i++){
-                const np=generatePlayer(pick(SQUAD_TEMPLATE),Math.max(58,targetBase-3),true,0,generationProfile);
+                const np=generatePlayer(pick(SQUAD_TEMPLATE),Math.max(58,targetBase-1),true,0,generationProfile);
                 np.value=computePlayerValue(np,team);np.clubHistory=[team.name];np.ovrHistory=[{season:currentSeason,ovr:np.ovr}];
                 team.squad.push(np);
             }
         }
+        maintainYouthPipeline(team);
         enforceGeneratedClubCeiling(team);
         team.squad.forEach(p=>{p.value=computePlayerValue(p,team);});
     });
@@ -2687,20 +3463,12 @@ chooseTeam=function(id){
 // Autosave frequently and on page close. This also protects archives if the user closes the tab.
 const __originalInitApp=initApp;
 initApp=function(){
-    const loaded=loadPersistentState();
+    // IMPORTANT: do not load the career here. The player must explicitly choose Continue or New Career.
     installSaveUI();
-    if(loaded&&managedTeamId&&getActiveTeam()){
-        document.getElementById('team-select-screen').style.display='none';
-        document.getElementById('main-app').style.display='block';
-        ensurePlayerMetadata();
-        if(!competition)startSeason();
-        loadTeamData();renderTournament();updateManagedStrip();renderLeaderboard();renderPlayerSearch();renderTransferMarket();
-        if(document.getElementById('always-best-xi-toggle'))document.getElementById('always-best-xi-toggle').checked=alwaysBestXI;
-    }else{
-        document.getElementById('team-select-screen').style.display='block';
-        document.getElementById('main-app').style.display='none';
-        renderTeamSelectScreen();
-    }
+    if(sessionStorage.getItem('ucl_manager_start_new_career')==='1'){
+        sessionStorage.removeItem('ucl_manager_start_new_career');
+        showClubPicker();
+    }else showStartupScreen();
     if(!saveTimer)saveTimer=setInterval(savePersistentState,3000);
 };
 window.addEventListener('beforeunload',savePersistentState);
