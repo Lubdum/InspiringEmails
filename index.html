@@ -150,6 +150,14 @@ tr:hover{background:rgba(255,255,255,.03);}
 .watcher-pens-score{font-weight:800;font-size:1.3rem;text-align:center;margin-bottom:10px;}
 #watcher-overlay{animation:fadeIn .18s var(--ease);}
 #watcher-overlay>div{animation:popIn .25s var(--ease);}
+
+.archive-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 7px;border-radius:999px;font-size:.68rem;font-weight:800;border:1px solid var(--border-color);color:var(--text-muted);background:var(--panel-bg-3);}
+.archive-badge.retired{color:#c4b5fd;border-color:#6d5aa8;background:rgba(167,139,250,.09);}
+.form-badge{display:inline-block;padding:3px 7px;border-radius:999px;background:var(--panel-bg-3);border:1px solid var(--border-color);font-size:.68rem;font-weight:800;color:var(--text-muted);}
+.player-history-bar{display:flex;gap:4px;align-items:flex-end;height:70px;margin:12px 0;overflow:hidden;}
+.player-history-bar span{flex:1;min-width:4px;border-radius:3px 3px 0 0;background:var(--accent-blue);opacity:.8;position:relative;}
+.player-history-bar span b{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);font-size:9px;color:var(--text-muted);white-space:nowrap;}
+.autosave-pill{font-size:.7rem;color:var(--text-muted);padding:4px 8px;border:1px solid var(--border-color);border-radius:999px;background:var(--panel-bg);}
 </style>
 </head>
 <body>
@@ -187,11 +195,22 @@ tr:hover{background:rgba(255,255,255,.03);}
             <div class="panel">
                 <h2>Tactical Setup</h2>
                 <div style="margin-bottom:10px;display:flex;gap:10px;align-items:center;">
-                    <label>Formation: </label>
+                    <label for="formation-select">Formation: </label>
                     <select id="formation-select" onchange="changeFormation()">
                         <option value="4-3-3">4-3-3</option>
                         <option value="4-4-2">4-4-2</option>
+                        <option value="4-2-3-1">4-2-3-1</option>
+                        <option value="4-3-2-1">4-3-2-1</option>
+                        <option value="4-1-4-1">4-1-4-1</option>
+                        <option value="4-2-2-2">4-2-2-2</option>
+                        <option value="4-4-1-1">4-4-1-1</option>
+                        <option value="4-5-1">4-5-1</option>
                         <option value="3-5-2">3-5-2</option>
+                        <option value="3-4-3">3-4-3</option>
+                        <option value="3-3-3-1">3-3-3-1</option>
+                        <option value="3-2-4-1">3-2-4-1</option>
+                        <option value="5-3-2">5-3-2</option>
+                        <option value="2-3-5">2-3-5</option>
                     </select>
                     <button class="btn btn-ghost btn-sm" onclick="autoArrangeFormation()">Auto-Arrange Best XI</button>
                     <label style="display:flex;align-items:center;gap:6px;font-size:.78rem;color:var(--text-muted);cursor:pointer;">
@@ -199,7 +218,7 @@ tr:hover{background:rgba(255,255,255,.03);}
                     </label>
                 </div>
                 <div class="pitch-container" id="pitch"></div>
-                <p style="font-size:.76rem;color:var(--text-muted);margin-top:8px;">Click a pitch slot, then click another slot or a roster row to swap. Auto-Arrange tests all three formations and every player combination to find your strongest lineup.</p>
+                <p style="font-size:.76rem;color:var(--text-muted);margin-top:8px;">Click a pitch slot, then click another slot or a roster row to swap. Auto-Arrange scores every available tactical shape and player-slot combination to find your strongest starting XI.</p>
             </div>
             <div class="panel">
                 <h2>Squad (22-man roster)</h2>
@@ -293,7 +312,7 @@ tr:hover{background:rgba(255,255,255,.03);}
 
     <div id="tab-leaderboard" class="tab-content">
         <div class="filters-row">
-            <label style="font-size:.82rem;color:var(--text-muted);">Season:</label>
+            <span style="font-size:.82rem;color:var(--text-muted);">Season:</span>
             <select id="season-select" onchange="renderLeaderboard()"></select>
         </div>
         <div id="season-champion-banner"></div>
@@ -317,11 +336,15 @@ tr:hover{background:rgba(255,255,255,.03);}
     <div id="tab-search" class="tab-content">
         <div class="grid-2">
             <div class="panel">
-                <h2>Search Player</h2>
-                <input type="text" id="ps-search" placeholder="Type a player name..." oninput="renderPlayerSearch()" style="width:100%;margin-bottom:12px;">
+                <h2>Player Database &amp; Archive</h2>
+                <div class="filters-row" style="margin-bottom:10px;">
+                    <input type="text" id="ps-search" placeholder="Search any current or retired player..." oninput="renderPlayerSearch()" style="flex:1;min-width:220px;">
+                    <select id="ps-status" onchange="renderPlayerSearch()"><option value="ALL">Current + Retired</option><option value="CURRENT">Current Players</option><option value="RETIRED">Retired Archive</option></select>
+                </div>
+                <div id="player-db-count" style="font-size:.76rem;color:var(--text-muted);margin-bottom:8px;"></div>
                 <div style="max-height:460px;overflow-y:auto;">
-                    <table><thead><tr><th>Name</th><th>Club</th><th>Pos</th><th>Age</th><th>OVR</th><th></th></tr></thead>
-                    <tbody id="player-search-table"><tr><td colspan="6" style="color:var(--text-dim);">Type a player name to search.</td></tr></tbody></table>
+                    <table><thead><tr><th>Name</th><th>Club / Last Club</th><th>Pos</th><th>Age</th><th>OVR</th><th>Status</th><th></th></tr></thead>
+                    <tbody id="player-search-table"><tr><td colspan="7" style="color:var(--text-dim);">Type a player name to search.</td></tr></tbody></table>
                 </div>
             </div>
             <div class="panel" id="player-profile-panel" style="display:none;"></div>
@@ -378,6 +401,7 @@ function pick(arr){return arr[randInt(0,arr.length-1)];}
 function shuffle(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=randInt(0,i);[a[i],a[j]]=[a[j],a[i]];}return a;}
 
 let nextPlayerId=100000;
+let currentSeason=1;
 function genName(){return `${pick(FIRST_NAMES)} ${pick(SURNAMES)}`;}
 const POS_OVR_WEIGHTS={
     GK:{pac:0.05,sho:0.02,pas:0.15,dri:0.08,def:0.45,phy:0.25},
@@ -413,36 +437,50 @@ function computePlayerValue(p,team){
     const starMult=p.isStar?1.15:1.0;
     return Math.max(0.3,Math.round(base*posMult*ageMult*clubMult*starMult*10)/10);
 }
-function rollPotential(targetOvr,luckBias,youth){
-    let pot=targetOvr+(youth?randInt(4,10):randInt(1,5));
-    if(Math.random()<0.22){
-        pot+=randInt(3,6);
-        if(Math.random()<0.18){
-            pot+=randInt(3,6);
-            if(Math.random()<0.10){
-                pot+=randInt(3,6);
-                if(Math.random()<0.05){
-                    pot+=randInt(3,6);
-                }
+const POT_PLAYER_CAPS={
+    1:{ceiling:94,floor:71,range:8},
+    2:{ceiling:89,floor:67,range:6},
+    3:{ceiling:84,floor:63,range:4},
+    4:{ceiling:79,floor:59,range:2},
+    5:{ceiling:74,floor:56,range:1}
+};
+function getRealisticGenerationProfile(pot,baseOvr){
+    const cap=POT_PLAYER_CAPS[pot]||POT_PLAYER_CAPS[5];
+    const targetCeiling=Math.min(cap.ceiling,Math.max(cap.floor+6,Math.round(baseOvr+cap.range)));
+    return {ceiling:targetCeiling,floor:cap.floor};
+}
+function rollPotential(targetOvr,luckBias,youth,maxCap){
+    const ceiling=maxCap||99;
+    let pot=targetOvr+(youth?randInt(2,6):randInt(0,4));
+    if(Math.random()<0.18){
+        pot+=randInt(2,5);
+        if(Math.random()<0.10){
+            pot+=randInt(2,4);
+            if(Math.random()<0.05){
+                pot+=randInt(1,3);
             }
         }
     }
-    return Math.min(99,pot);
+    return Math.min(ceiling,pot);
 }
-function generatePlayer(pos,baseOvr,youth,luckBias){
-    luckBias=luckBias||0;
-    let age=youth?randInt(17,19):randInt(19,33);
+function generatePlayer(pos,baseOvr,youth,luckBias,generationProfile){
+    luckBias=Number(luckBias||0);
+    generationProfile=generationProfile||{};
+    const realisticProfile=generationProfile.pot!==undefined?getRealisticGenerationProfile(generationProfile.pot,baseOvr):null;
+    const ceiling=generationProfile.ceiling!==undefined?generationProfile.ceiling:(realisticProfile?realisticProfile.ceiling:(youth?82:91));
+    const floor=generationProfile.floor!==undefined?generationProfile.floor:(realisticProfile?realisticProfile.floor:(youth?58:58));
+    let age=youth?randInt(16,20):randInt(19,33);
     let targetOvr;
     if(youth){
-        const isWonderkid=Math.random()<0.18;
-        const offset=isWonderkid?-4:-14;
-        targetOvr=Math.max(58,Math.min(82,baseOvr+offset+randInt(-4+luckBias,4+luckBias)));
+        const isWonderkid=Math.random()<(generationProfile.pot===1?0.08:(generationProfile.pot===2?0.07:0.05));
+        const offset=isWonderkid?-2:-10;
+        targetOvr=Math.max(floor,Math.min(ceiling,baseOvr+offset+randInt(-2,2)+Math.round(luckBias*.20)));
     } else {
-        targetOvr=Math.max(58,Math.min(91,baseOvr+randInt(-5+luckBias,5+luckBias)));
+        targetOvr=Math.max(floor,Math.min(ceiling,baseOvr+randInt(-3,3)+Math.round(luckBias*.18)));
     }
-    const pot=rollPotential(targetOvr,luckBias,youth);
+    const pot=Math.min(ceiling,rollPotential(targetOvr,luckBias,youth,ceiling));
     const name=genName();
-    function stat(skew){return Math.max(28,Math.min(99,targetOvr+skew+randInt(-6+luckBias,6+luckBias)));}
+    function stat(skew){return Math.max(28,Math.min(99,targetOvr+skew+randInt(-5,5)));}
     let pac,sho,pas,dri,def,phy;
     if(pos==='GK'){pac=stat(-20);sho=stat(6);pas=stat(4);dri=stat(-16);def=stat(9);phy=stat(6);}
     else if(pos==='CB'){pac=stat(-8);sho=stat(-25);pas=stat(-10);dri=stat(-15);def=stat(8);phy=stat(6);}
@@ -450,7 +488,7 @@ function generatePlayer(pos,baseOvr,youth,luckBias){
     else if(pos==='CDM'){pac=stat(-5);sho=stat(-10);pas=stat(5);dri=stat(0);def=stat(8);phy=stat(6);}
     else if(pos==='CM'){pac=stat(0);sho=stat(0);pas=stat(8);dri=stat(5);def=stat(0);phy=stat(0);}
     else if(pos==='CAM'){pac=stat(2);sho=stat(8);pas=stat(8);dri=stat(10);def=stat(-20);phy=stat(-8);}
-    else if(pos==='LW'||pos==='RW'){pac=stat(12);sho=stat(6);pas=stat(2);dri=stat(10);def=stat(-25);phy=stat(-10);}
+    else if(pos==='LW'||pos==='RW'||pos==='LM'||pos==='RM'){pac=stat(10);sho=stat(5);pas=stat(2);dri=stat(9);def=stat(-20);phy=stat(-8);}
     else{pac=stat(6);sho=stat(14);pas=stat(-4);dri=stat(6);def=stat(-30);phy=stat(4);}
     const rawOvr=computeOvr({pos,pac,sho,pas,dri,def,phy});
     const correction=targetOvr-rawOvr;
@@ -460,14 +498,34 @@ function generatePlayer(pos,baseOvr,youth,luckBias){
     dri=Math.max(28,Math.min(99,dri+correction));
     def=Math.max(28,Math.min(99,def+correction));
     phy=Math.max(28,Math.min(99,phy+correction));
-    const ovr=computeOvr({pos,pac,sho,pas,dri,def,phy});
-    const value=computePlayerValue({pos,ovr,age},null);
-    return {id:nextPlayerId++,name,pos,ovr,pot:Math.max(ovr,pot),age,value,pac,sho,pas,dri,def,phy,isStar:false};
+    const ovr=Math.min(ceiling,computeOvr({pos,pac,sho,pas,dri,def,phy}));
+    return {
+        id:nextPlayerId++,name,pos,ovr,pot:Math.max(ovr,Math.min(ceiling,pot)),age,
+        value:computePlayerValue({pos,ovr,age},null),pac,sho,pas,dri,def,phy,
+        isStar:false,clubHistory:[],ovrHistory:[{season:currentSeason||1,ovr}],seasonForm:50
+    };
 }
 const SQUAD_TEMPLATE=['GK','GK','GK','CB','CB','CB','CB','LB','LB','RB','RB','CDM','CDM','CM','CM','CAM','CAM','LW','RW','ST','ST','ST'];
-function generateSquad(baseOvr,luckBias){
-    const squad=SQUAD_TEMPLATE.map(pos=>generatePlayer(pos,baseOvr,false,luckBias));
-    markStars(squad);
+const STAR_CAPS={1:3,2:2,3:1,4:1,5:1};
+function generateSquad(baseOvr,luckBias,club){
+    const pot=club&&club.pot!==undefined?club.pot:3;
+    const profile=club&&club.playerCeiling!==undefined?{ceiling:Math.min(club.playerCeiling, POT_PLAYER_CAPS[pot]?.ceiling || club.playerCeiling), floor:Math.max(58, Math.round(baseOvr-10))}:{...getRealisticGenerationProfile(pot,baseOvr)};
+    const squad=SQUAD_TEMPLATE.map(pos=>generatePlayer(pos,baseOvr,false,luckBias,{...profile,pot}));
+    const ordered=[...squad].sort((a,b)=>b.ovr-a.ovr);
+    const starCap=STAR_CAPS[pot]||1;
+    const starCount=Math.min(starCap, Math.max(1, baseOvr >= 80 ? 2 : 1));
+    ordered.slice(0,starCount).forEach((p)=>{
+        p.isStar=true;
+        p.name=pick(STAR_NAMES);
+        const boostCap=Math.max(0, profile.ceiling - p.ovr);
+        const bump=Math.min(boostCap, randInt(1,3));
+        if(bump>0){p.sho=Math.min(99,p.sho+bump);p.dri=Math.min(99,p.dri+bump);p.pas=Math.min(99,p.pas+Math.max(1,Math.round(bump/2)));p.ovr=Math.min(profile.ceiling,computeOvr(p));}
+        p.pot=Math.min(profile.ceiling,Math.max(p.pot,p.ovr));
+    });
+    squad.forEach(p=>{
+        p.ovr=Math.min(profile.ceiling,computeOvr(p));
+        p.pot=Math.min(profile.ceiling,Math.max(p.ovr,p.pot));
+    });
     return squad;
 }
 function markStars(squad){
@@ -475,23 +533,30 @@ function markStars(squad){
     candidates.forEach(p=>{
         p.isStar=true;
         p.name=pick(STAR_NAMES);
-        const bump=randInt(2,4);
+        const bump=randInt(1,3);
         p.sho=Math.min(99,p.sho+bump);p.dri=Math.min(99,p.dri+bump);
-        p.ovr=computeOvr(p);
-        p.pot=Math.max(p.pot,p.ovr);
+        p.ovr=computeOvr(p);p.pot=Math.max(p.pot,p.ovr);
     });
 }
-function fillSquadTo22(squad,baseOvr){
+function fillSquadTo22(squad,baseOvr,generationProfile){
     const need=22-squad.length;
+    if(need<=0)return squad;
     const counts={};SQUAD_TEMPLATE.forEach(p=>counts[p]=(counts[p]||0)+1);
     const have={};squad.forEach(p=>have[p.pos]=(have[p.pos]||0)+1);
     const extra=[];
+    const capProfile=generationProfile||{};
     Object.keys(counts).forEach(pos=>{
         const shortfall=counts[pos]-(have[pos]||0);
-        for(let i=0;i<shortfall;i++)extra.push(generatePlayer(pos,baseOvr-6,false,4));
+        for(let i=0;i<shortfall;i++){
+            const safeProfile={...capProfile, ceiling:Math.min(capProfile.ceiling || 90, capProfile.ceiling || 90), floor:capProfile.floor || 58};
+            extra.push(generatePlayer(pos,Math.max(58,baseOvr-6),false,0,safeProfile));
+        }
     });
-    while(squad.length+extra.length<22)extra.push(generatePlayer(pick(['CB','CM','ST']),baseOvr-8,false,4));
-    return squad.concat(extra.slice(0,need>0?need:extra.length));
+    while(squad.length+extra.length<22){
+        const safeProfile={...capProfile, ceiling:Math.min(capProfile.ceiling || 90, capProfile.ceiling || 90), floor:capProfile.floor || 58};
+        extra.push(generatePlayer(pick(['CB','CM','ST']),Math.max(58,baseOvr-8),false,0,safeProfile));
+    }
+    return squad.concat(extra.slice(0,need));
 }
 
 // ==================== CLUBS ====================
@@ -647,7 +712,18 @@ teamsData.forEach(t=>{
         p.pot=Math.max(p.pot,p.ovr);
     });
 });
-teamsData.forEach(t=>{t.squad=fillSquadTo22(t.squad,84);t.matchHistory=[];});
+teamsData.forEach(t=>{
+    const best=Math.max(...t.squad.map(p=>p.ovr),0);
+    t.playerCeiling=t.playerCeiling!==undefined?t.playerCeiling:best;
+    t.teamStrength=t.teamStrength!==undefined?t.teamStrength:best;
+    t.squad=fillSquadTo22(t.squad,Math.max(60,best-5),t.playerCeiling?{ceiling:t.playerCeiling,floor:Math.max(58,best-12)}:undefined);
+    t.matchHistory=[];
+    t.squad.forEach(p=>{
+        if(!p.clubHistory)p.clubHistory=[t.name];
+        if(!p.ovrHistory)p.ovrHistory=[{season:1,ovr:p.ovr}];
+        if(p.seasonForm===undefined)p.seasonForm=50;
+    });
+});
 
 const GEN_POT1=[];
 const GEN_POT2=[{id:'atletico',name:'Atletico Madrid',ovr:85},{id:'juventus',name:'Juventus',ovr:84},{id:'dortmund',name:'Borussia Dortmund',ovr:84},{id:'napoli',name:'Napoli',ovr:83},{id:'leverkusen',name:'Bayer Leverkusen',ovr:83},{id:'chelsea',name:'Chelsea',ovr:82},{id:'tottenham',name:'Tottenham Hotspur',ovr:83}];
@@ -657,7 +733,13 @@ const POT5_NAMES=['Slovan Bratislava','Malmo FF','Ferencvaros','Red Star Belgrad
 const GEN_POT5=POT5_NAMES.map((n,i)=>({id:'pot5_'+i,name:n,ovr:randInt(66,73)}));
 
 const LUCK_BY_POT={1:4,2:2,3:0,4:-2,5:-4};
-function addGenClub(t,pot){teamsData.push({id:t.id,name:t.name,pot,formation:'4-3-3',squad:generateSquad(t.ovr,LUCK_BY_POT[pot]||0),matchHistory:[]});}
+function addGenClub(t,pot){
+    const cap=POT_PLAYER_CAPS[pot]||POT_PLAYER_CAPS[5];
+    const ceiling=Math.min(cap.ceiling,Math.max(cap.floor+4,Math.round(t.ovr + (pot===1?7:pot===2?5:pot===3?3:pot===4?1:0))));
+    const club={id:t.id,name:t.name,pot,formation:'4-3-3',playerCeiling:ceiling,teamStrength:t.ovr,squad:[],matchHistory:[]};
+    club.squad=generateSquad(t.ovr,LUCK_BY_POT[pot]||0,club);
+    teamsData.push(club);
+}
 GEN_POT1.forEach(t=>addGenClub(t,1));
 GEN_POT2.forEach(t=>addGenClub(t,2));
 GEN_POT3.forEach(t=>addGenClub(t,3));
@@ -713,10 +795,49 @@ teamsData.forEach(t=>{
 });
 
 const FORMATIONS={
-'4-3-3':['GK','LB','CB','CB','RB','CM','CDM','CAM','LW','ST','RW'],
-'4-4-2':['GK','LB','CB','CB','RB','LM','CM','CM','RM','ST','ST'],
-'3-5-2':['GK','CB','CB','CB','CDM','CDM','LM','CAM','RM','ST','ST']
+'4-3-3':{slots:['GK','LB','CB','CB','RB','CM','CDM','CAM','LW','ST','RW'],rowMap:[[8,9,10],[5,6,7],[1,2,3,4],[0]]},
+'4-4-2':{slots:['GK','LB','CB','CB','RB','LM','CM','CM','RM','ST','ST'],rowMap:[[9,10],[5,6,7,8],[1,2,3,4],[0]]},
+'4-2-3-1':{slots:['GK','LB','CB','CB','RB','CDM','CDM','LW','CAM','RW','ST'],rowMap:[[10],[7,8,9],[5,6],[1,2,3,4],[0]]},
+'4-3-2-1':{slots:['GK','LB','CB','CB','RB','CM','CDM','CM','CAM','CAM','ST'],rowMap:[[10],[8,9],[5,6,7],[1,2,3,4],[0]]},
+'4-1-4-1':{slots:['GK','LB','CB','CB','RB','CDM','LM','CM','CM','RM','ST'],rowMap:[[10],[5,6,7,8,9],[1,2,3,4],[0]]},
+'4-2-2-2':{slots:['GK','LB','CB','CB','RB','CDM','CDM','CAM','CAM','ST','ST'],rowMap:[[9,10],[7,8],[5,6],[1,2,3,4],[0]]},
+'4-4-1-1':{slots:['GK','LB','CB','CB','RB','LM','CM','CM','RM','CAM','ST'],rowMap:[[10],[9],[5,6,7,8],[1,2,3,4],[0]]},
+'4-5-1':{slots:['GK','LB','CB','CB','RB','LM','CM','CM','CM','RM','ST'],rowMap:[[10],[5,6,7,8,9],[1,2,3,4],[0]]},
+'3-5-2':{slots:['GK','CB','CB','CB','CDM','CDM','LM','CAM','RM','ST','ST'],rowMap:[[9,10],[6,7,8],[4,5],[1,2,3],[0]]},
+'3-4-3':{slots:['GK','CB','CB','CB','LM','CM','CM','RM','LW','ST','RW'],rowMap:[[8,9,10],[4,5,6,7],[1,2,3],[0]]},
+'3-3-3-1':{slots:['GK','CB','CB','CB','LM','CM','CDM','RM','LW','RW','ST'],rowMap:[[10],[8,9],[6,7],[1,2,3,4,5],[0]]},
+'3-2-4-1':{slots:['GK','CB','CB','CB','CDM','CDM','LW','CAM','RW','ST','LM'],rowMap:[[8,9,10],[5,6],[1,2,3,4],[0]]},
+'5-3-2':{slots:['GK','LB','CB','CB','CB','RB','CM','CDM','CM','ST','ST'],rowMap:[[9,10],[6,7,8],[1,2,3,4,5],[0]]},
+'2-3-5':{slots:['GK','CB','CB','CDM','CM','CAM','LW','RW','ST','ST','ST'],rowMap:[[8,9,10],[4,5,6,7],[1,2,3],[0]]}
 };
+
+function getFormationDefinition(name){return FORMATIONS[name]||FORMATIONS['4-3-3'];}
+function getPositionFit(player, slot){
+    if(!player || !slot) return 0;
+    const roleMap={
+        GK:{GK:30,CB:7,LB:5,RB:5,CDM:3,CM:2},
+        LB:{LB:28,CB:12,RB:8,LM:8,CM:4},
+        RB:{RB:28,CB:12,LB:8,RM:8,CM:4},
+        CB:{CB:27,LB:10,RB:10,CDM:6},
+        CDM:{CDM:26,CB:12,CM:12,LB:5,RB:5},
+        CM:{CM:24,CDM:11,CAM:10,LM:8,RM:8},
+        CAM:{CAM:25,CM:12,ST:7,LW:8,RW:8},
+        LM:{LM:24,LW:12,CAM:10,CM:8,RM:6},
+        RM:{RM:24,RW:12,CAM:10,CM:8,LM:6},
+        LW:{LW:25,LM:12,CAM:8,RW:7,ST:6},
+        RW:{RW:25,RM:12,CAM:8,LW:7,ST:6},
+        ST:{ST:27,LW:12,RW:12,CAM:8}
+    };
+    const fit=(roleMap[slot]&&roleMap[slot][player.pos])||0;
+    const positionalBias=(player.pos===slot?18:0)+(player.isStar?3:0);
+    const metricBonus=(slot==='ST'?(player.sho||0)/8:slot==='GK'?(player.def||0)/10:(slot.includes('L')||slot.includes('R')||slot.includes('M'))?(player.dri||0)/8:(slot==='CB'?(player.def||0)/8:(slot==='CDM'?(player.def||0)/7:(slot==='CAM'?(player.pas||0)/9:(player.pas||0)/10)))) ;
+    return fit + positionalBias + metricBonus;
+}
+function getSlotScore(player, slot){
+    if(!player) return -999;
+    const quality = player.ovr + (player.pot || 0) * 0.06 + (player.isStar ? 5 : 0);
+    return quality + getPositionFit(player, slot);
+}
 
 let managedTeamId=null,selectedSlotIndex=null,tieCounter=1,competition=null,viewStage=null;
 let playerStats={};
@@ -725,7 +846,6 @@ let careerStats={};
 let retiredPlayers={};
 let playerTrophies={};
 let clubAllTimeStats={};
-let currentSeason=1;
 let seasonHistory=[];
 let transferQueue={offers:[],listings:[]};
 let transferLog=[];
@@ -789,10 +909,9 @@ function loadTeamData(){const team=getActiveTeam();document.getElementById('form
 function changeFormation(){getActiveTeam().formation=document.getElementById('formation-select').value;renderPitch();}
 function renderPitch(){
     const team=getActiveTeam();const pitch=document.getElementById('pitch');pitch.innerHTML='';
-    const slots=FORMATIONS[team.formation];let rowMap=[];
-    if(team.formation==='4-3-3'){rowMap=[[8,9,10],[5,6,7],[1,2,3,4],[0]];}
-    else if(team.formation==='4-4-2'){rowMap=[[9,10],[5,6,7,8],[1,2,3,4],[0]];}
-    else if(team.formation==='3-5-2'){rowMap=[[9,10],[6,7,8],[4,5],[1,2,3],[0]];}
+    const def=getFormationDefinition(team.formation);
+    const slots=def.slots;
+    const rowMap=def.rowMap;
     rowMap.forEach(rowIndices=>{
         const rowDiv=document.createElement('div');rowDiv.className='pitch-row';
         rowIndices.forEach(idx=>{
@@ -840,29 +959,42 @@ function swapWithSelected(index){
 function arrangeBestXIForTeam(team){
     let best=null;
     Object.keys(FORMATIONS).forEach(fname=>{
-        const slots=FORMATIONS[fname];
-        const pool=[...team.squad];
-        const assigned=new Array(11).fill(null);
+        const def=getFormationDefinition(fname);
+        const slots=def.slots;
+        const assigned=new Array(slots.length).fill(null);
         const usedPlayers=new Set();
-        for(let round=0;round<11;round++){
-            let bestPair=null,bestVal=-1;
-            for(let s=0;s<11;s++){
-                if(assigned[s])continue;
-                pool.forEach(p=>{
-                    if(usedPlayers.has(p.id))return;
-                    const v=calculatePositionOvr(p,slots[s]);
-                    if(v>bestVal){bestVal=v;bestPair={slot:s,player:p};}
-                });
+
+        const gkIndex=slots.indexOf('GK');
+        if(gkIndex>=0){
+            const gkCandidates=team.squad.filter(p=>p.pos==='GK').sort((a,b)=>getSlotScore(b,'GK')-getSlotScore(a,'GK'));
+            if(gkCandidates.length){
+                assigned[gkIndex]=gkCandidates[0];
+                usedPlayers.add(gkCandidates[0].id);
             }
-            if(!bestPair)break;
-            assigned[bestPair.slot]=bestPair.player;usedPlayers.add(bestPair.player.id);
         }
-        const total=assigned.reduce((sum,p,i)=>sum+(p?calculatePositionOvr(p,slots[i]):0),0);
+
+        for(let i=0;i<slots.length;i++){
+            if(slots[i]==='GK' || assigned[i]) continue;
+            let bestCandidate=null,bestValue=-Infinity;
+            team.squad.forEach(player=>{
+                if(usedPlayers.has(player.id)) return;
+                const score=getSlotScore(player,slots[i]);
+                if(score>bestValue){bestValue=score;bestCandidate=player;}
+            });
+            if(bestCandidate){
+                assigned[i]=bestCandidate;
+                usedPlayers.add(bestCandidate.id);
+            }
+        }
+
+        const total=assigned.reduce((sum,p,i)=>sum + (p ? getSlotScore(p,slots[i]) : 0), 0);
         const bench=team.squad.filter(p=>!usedPlayers.has(p.id));
-        if(!best||total>best.total)best={formation:fname,starters:assigned,bench,total};
+        if(!best || total>best.total) best={formation:fname,starters:assigned,bench,total};
     });
+
     team.formation=best.formation;
-    team.squad=[...best.starters,...best.bench];
+    const starterIds=new Set((best.starters||[]).filter(Boolean).map(p=>p.id));
+    team.squad=[...best.starters.filter(Boolean), ...best.bench.filter(p=>!starterIds.has(p.id))];
     return best;
 }
 function autoArrangeFormation(silent){
@@ -884,7 +1016,7 @@ const POS_ASSIST_W={CAM:1.0,CM:0.9,LM:0.7,RM:0.7,LW:0.7,RW:0.7,CDM:0.5,ST:0.4,LB
 const POS_DEF_W={CB:1.0,LB:0.55,RB:0.55,CDM:0.3,GK:0.15,CM:0.15,LM:0.05,RM:0.05,CAM:0.03,LW:0.03,RW:0.03,ST:0.03};
 function getGK(team){return team.squad.slice(0,11).find(p=>p.pos==='GK')||{ovr:70};}
 function attackRating(team){
-    const starters=team.squad.slice(0,11);const slots=FORMATIONS[team.formation];
+    const starters=team.squad.slice(0,11);const slots=getFormationDefinition(team.formation).slots;
     let total=0,wsum=0;
     starters.forEach((p,i)=>{const ap=slots[i]||p.pos;const w=POS_ATTACK_W[ap]||0.05;const val=p.sho*0.5+p.dri*0.3+p.pas*0.2;total+=w*val;wsum+=w;});
     return wsum?total/wsum:60;
@@ -1315,7 +1447,7 @@ function simulateStep(){
     renderTournament();renderLeaderboard();
 }
 function computeChampionLineup(champTeam){
-    const slots=FORMATIONS[champTeam.formation];
+    const slots=getFormationDefinition(champTeam.formation).slots;
     return champTeam.squad.slice(0,11).map((p,i)=>{
         const stat=playerStats[p.id];
         return {name:p.name,pos:slots[i],ovr:p.ovr,goals:stat?stat.goals:0,assists:stat?stat.assists:0,isStar:p.isStar};
@@ -1335,7 +1467,7 @@ function archiveSeason(){
 
 // ==================== TRANSFERS / MONEY ====================
 function bestElevenIds(team){
-    const slots=FORMATIONS[team.formation];
+    const slots=getFormationDefinition(team.formation).slots;
     const pool=[...team.squad];const used=new Set();const ids=[];
     for(let s=0;s<11;s++){
         let bestP=null,bestV=-1;
@@ -1365,7 +1497,7 @@ function allSellablePlayers(){
     return list;
 }
 function weakestSlot(team){
-    const slots=FORMATIONS[team.formation];
+    const slots=getFormationDefinition(team.formation).slots;
     const bestIds=bestElevenIds(team);
     let worst=null,worstVal=999;
     bestIds.forEach((id,i)=>{
@@ -1388,7 +1520,7 @@ function runTransferShopping(team,market,maxBuys){
     while(buys<maxBuys){
         const weakPos=weakestSlot(team);
         const currentBestVal=(()=>{
-            const ids=bestElevenIds(team);const slots=FORMATIONS[team.formation];
+            const ids=bestElevenIds(team);const slots=getFormationDefinition(team.formation).slots;
             let v=999;ids.forEach((id,i)=>{if(slots[i]===weakPos){const p=team.squad.find(pl=>pl.id===id);const eff=calculatePositionOvr(p,weakPos);if(eff<v)v=eff;}});
             return v===999?0:v;
         })();
@@ -1660,6 +1792,9 @@ let detailCounter=0;
 let watcher=null;
 let watcherStore={};
 let pendingWatchStore={};
+let watcherInterval=null;
+let watcherPaused=false;
+let watcherSpeed=1;
 function watcherPhaseRange(phase){
     if(phase==='1H')return [1,45];
     if(phase==='2H')return [46,90];
@@ -1680,15 +1815,68 @@ function openWatcher(homeTeamId,awayTeamId,events,tie,onComplete){
     if(penalties)phases.push('PENS');
     watcher={homeTeamId,awayTeamId,events:events||[],extraTimeEvents,penalties,
         tieTeamAId:tie?tie.teamA:null,tieTeamBId:tie?tie.teamB:null,
-        phases,phaseIndex:0,revealedEvents:[],scoreHome:0,scoreAway:0,
-        penIndex:0,penScoreA:0,penScoreB:0,penLog:[],onComplete:onComplete||null,followUpTie:null};
+        phases,phaseIndex:0,revealedEvents:[],revealedMinutes:{},scoreHome:0,scoreAway:0,
+        penIndex:0,penScoreA:0,penScoreB:0,penLog:[],onComplete:onComplete||null,followUpTie:null,currentMinute:0,lastMilestonePaused:0};
+    watcherPaused=false;
+    watcherSpeed=1;
+    if(watcherInterval)clearInterval(watcherInterval);
+    watcherInterval=null;
     renderWatcher();
     document.getElementById('watcher-overlay').style.display='flex';
+    startAutoAdvance();
 }
 function closeWatcher(){
+    if(watcherInterval){clearInterval(watcherInterval);watcherInterval=null;}
     watcher=null;
     document.getElementById('watcher-overlay').style.display='none';
     renderTournament();
+}
+function startAutoAdvance(){
+    if(watcherInterval)clearInterval(watcherInterval);
+    watcherPaused=false;
+    const intervalTime=600/watcherSpeed;
+    watcherInterval=setInterval(()=>{
+        if(!watcher||watcherPaused)return;
+        const phase=watcher.phases[watcher.phaseIndex];
+        if(phase==='PENS'){
+            if(watcherInterval)clearInterval(watcherInterval);
+            watcherInterval=null;
+            renderWatcher();
+            return;
+        }
+        if(phase&&phase!=='PENS'){playWatcherPhase();}
+    },intervalTime);
+}
+function changeWatcherSpeed(speed){
+    watcherSpeed=speed;
+    if(watcherInterval)clearInterval(watcherInterval);
+    if(!watcherPaused)startAutoAdvance();
+    renderWatcher();
+}
+function isMilestoneMinute(minute){
+    return minute===45||minute===90||minute===91||minute===120;
+}
+function checkMilestoneStop(){
+    if(!watcher)return;
+    const phase=watcher.phases[watcher.phaseIndex];
+    if(phase==='PENS')return;
+    const currentMin=watcher.currentMinute;
+    if(currentMin>0&&isMilestoneMinute(currentMin)){
+        watcherPaused=true;
+    }
+}
+function pauseWatcher(){
+    watcherPaused=true;
+    renderWatcher();
+}
+function resumeWatcher(){
+    watcherPaused=false;
+    renderWatcher();
+}
+function autoResumeAfterMilestone(){
+    watcherPaused=false;
+    checkMilestoneStop();
+    renderWatcher();
 }
 function firePhaseComplete(){
     if(watcher.phaseIndex<watcher.phases.length)return;
@@ -1698,19 +1886,53 @@ function firePhaseComplete(){
         cb();
     }
 }
+function getPhaseMinuteList(phase){
+    if(!phase || phase==='PENS')return [];
+    const [lo,hi]=watcherPhaseRange(phase);
+    const minutes=[];
+    for(let minute=lo; minute<=hi; minute++)minutes.push(minute);
+    return minutes;
+}
+function getNextPhaseMinute(phase){
+    if(!phase || phase==='PENS')return null;
+    if(!watcher.revealedMinutes[phase])watcher.revealedMinutes[phase]={};
+    return getPhaseMinuteList(phase).find(minute=>!watcher.revealedMinutes[phase][minute])||null;
+}
 function playWatcherPhase(){
     if(!watcher)return;
     const phase=watcher.phases[watcher.phaseIndex];
     if(!phase||phase==='PENS')return;
     const [lo,hi]=watcherPhaseRange(phase);
     const sourceEvents=(phase==='ET1'||phase==='ET2')?watcher.extraTimeEvents:watcher.events;
-    const phaseEvents=(sourceEvents||[]).filter(e=>e.minute>=lo&&e.minute<=hi);
-    phaseEvents.forEach(e=>{
+    const nextMinute=getNextPhaseMinute(phase);
+    if(nextMinute===null){
+        watcher.phaseIndex++;
+        watcher.currentMinute=0;
+        firePhaseComplete();
+        renderWatcher();
+        return;
+    }
+    if(isMilestoneMinute(nextMinute)&&watcher.lastMilestonePaused!==nextMinute){
+        watcher.lastMilestonePaused=nextMinute;
+        watcherPaused=true;
+        renderWatcher();
+        return;
+    }
+    watcher.currentMinute=nextMinute;
+    const minuteEvents=(sourceEvents||[]).filter(e=>e.minute===nextMinute&&e.minute>=lo&&e.minute<=hi);
+    minuteEvents.forEach(e=>{
         watcher.revealedEvents.push(e);
         if(e.teamId===watcher.homeTeamId)watcher.scoreHome++;else watcher.scoreAway++;
     });
-    watcher.phaseIndex++;
-    firePhaseComplete();
+    if(!watcher.revealedMinutes[phase])watcher.revealedMinutes[phase]={};
+    watcher.revealedMinutes[phase][nextMinute]=true;
+    const phaseMinutes=getPhaseMinuteList(phase);
+    const phaseFinished=phaseMinutes.length>0 && phaseMinutes.every(minute=>watcher.revealedMinutes[phase][minute]);
+    if(phaseFinished){
+        watcher.phaseIndex++;
+        watcher.currentMinute=phase==='1H'?45:(phase==='2H'?90:(phase==='ET1'?105:120));
+        firePhaseComplete();
+    }
     renderWatcher();
 }
 function watcherTakeNextPenalty(){
@@ -1734,6 +1956,7 @@ function continueToExtraTime(){
     watcher.phases.push('ET1','ET2');
     if(tie.penalties)watcher.phases.push('PENS');
     watcher.followUpTie=null;
+    watcherPaused=false;
     renderWatcher();
 }
 function startWatchUpcoming(key){
@@ -1768,11 +1991,17 @@ function renderWatcher(){
         <div class="watcher-scoreline">${watcher.scoreHome} - ${watcher.scoreAway}</div>
         <div class="watcher-team right"><span>${away.name}</span>${dot(away.color)}</div>
     </div>`;
-    html+=`<div class="watcher-phase-tag">${currentPhase&&currentPhase!=='PENS'?phaseLabels[currentPhase]:(currentPhase==='PENS'?'Penalty Shootout':'Full Time')}</div>`;
+    html+=`<div class="watcher-phase-tag">${currentPhase&&currentPhase!=='PENS'?phaseLabels[currentPhase]+(watcher.currentMinute>0?` (${watcher.currentMinute}')`:' - Starting'):(currentPhase==='PENS'?'Penalty Shootout':'Full Time')}</div>`;
     html+=`<div class="watcher-log">${watcher.revealedEvents.length?renderTimelineHtml(watcher.revealedEvents):'<span style="color:var(--text-dim);font-size:.8rem;">Kick off to see the action unfold.</span>'}</div>`;
     if(currentPhase&&currentPhase!=='PENS'){
-        html+=`<div class="watcher-controls"><button class="btn btn-gold" onclick="playWatcherPhase()">Play ${phaseLabels[currentPhase]}</button>
-            <button class="btn btn-ghost" onclick="closeWatcher()">Close</button></div>`;
+        html+=`<div class="watcher-controls">`;
+        html+=`<div style="display:flex;gap:6px;justify-content:center;margin-bottom:8px;"><button class="btn btn-sm ${watcherSpeed===1?'btn-gold':'btn-ghost'}" onclick="changeWatcherSpeed(1)">1x</button><button class="btn btn-sm ${watcherSpeed===2?'btn-gold':'btn-ghost'}" onclick="changeWatcherSpeed(2)">2x</button></div>`;
+        if(watcherPaused){
+            html+=`<button class="btn btn-gold" onclick="autoResumeAfterMilestone()">Resume</button>`;
+        } else {
+            html+=`<button class="btn btn-accent" onclick="pauseWatcher()">Pause</button>`;
+        }
+        html+=`<button class="btn btn-ghost" onclick="closeWatcher()">Close</button></div>`;
     } else if(currentPhase==='PENS'){
         html+=`<div class="watcher-pens-score">${watcher.penScoreA} - ${watcher.penScoreB}</div>`;
         if(watcher.penLog.length){
@@ -2199,6 +2428,285 @@ function switchTab(tabId,evt){
     if(tabId==='search')renderPlayerSearch();
 }
 window.onload=initApp;
+
+// ==================== REALISM / CAREER ARCHIVE / AUTOSAVE UPGRADE ====================
+const SAVE_KEY='ucl_manager_realism_save_v4';
+const LEGACY_SAVE_KEY='ucl_manager_realism_save_v3';
+let saveTimer=null;
+let lastSaveAt=0;
+function clampNum(v,min,max){return Math.max(min,Math.min(max,v));}
+function ensurePlayerMetadata(){
+    teamsData.forEach(team=>{
+        if(!team.squad)team.squad=[];
+        if(team.playerCeiling===undefined)team.playerCeiling=Math.max(...team.squad.map(p=>p.ovr||0),60);
+        team.squad.forEach(p=>{
+            if(!p.clubHistory)p.clubHistory=[team.name];
+            else if(p.clubHistory.length===0)p.clubHistory=[team.name];
+            if(p.clubHistory[p.clubHistory.length-1]!==team.name)p.clubHistory.push(team.name);
+            if(!p.ovrHistory)p.ovrHistory=[{season:1,ovr:p.ovr||60}];
+            if(p.seasonForm===undefined)p.seasonForm=50;
+        });
+    });
+}
+function archiveRetiredPlayer(p,team){
+    if(!p||p.id===undefined)return;
+    const career=careerStats[p.id]||{id:p.id,name:p.name,goals:0,assists:0};
+    if(!retiredPlayers[p.id]){
+        retiredPlayers[p.id]={
+            ...JSON.parse(JSON.stringify(p)),
+            status:'retired',
+            retiredSeason:currentSeason,
+            retirementAge:p.age,
+            lastClub:team?team.name:'Unknown',
+            careerGoals:career.goals||0,
+            careerAssists:career.assists||0,
+            archivedAt:Date.now()
+        };
+    }else{
+        retiredPlayers[p.id].retiredSeason=currentSeason;
+        retiredPlayers[p.id].retirementAge=p.age;
+        retiredPlayers[p.id].lastClub=team?team.name:retiredPlayers[p.id].lastClub;
+        retiredPlayers[p.id].careerGoals=career.goals||retiredPlayers[p.id].careerGoals||0;
+        retiredPlayers[p.id].careerAssists=career.assists||retiredPlayers[p.id].careerAssists||0;
+    }
+}
+function getAllArchivedPlayers(){return Object.values(retiredPlayers||{});}
+function savePersistentState(){
+    try{
+        ensurePlayerMetadata();
+        const payload={
+            version:4,savedAt:Date.now(),nextPlayerId,managedTeamId,teamsData,playerStats,potsScores,careerStats,
+            retiredPlayers,playerTrophies,clubAllTimeStats,currentSeason,seasonHistory,transferQueue,transferLog,
+            autoManagerEnabled,favoritePlayers:[...favoritePlayers],alwaysBestXI,competition,viewStage,tieCounter
+        };
+        localStorage.setItem(SAVE_KEY,JSON.stringify(payload));
+        lastSaveAt=Date.now();
+        const pill=document.getElementById('autosave-pill');
+        if(pill)pill.textContent='Autosaved '+new Date(lastSaveAt).toLocaleTimeString();
+    }catch(e){console.warn('Autosave failed',e);}
+}
+function loadPersistentState(){
+    try{
+        // Never let a broken/empty old save replace the built-in 64-club database.
+        // v4 is the current format; v3 is accepted only when it contains a real club database.
+        const raw=localStorage.getItem(SAVE_KEY)||localStorage.getItem(LEGACY_SAVE_KEY);
+        if(!raw)return false;
+        const d=JSON.parse(raw);
+        if(!d||d.version<1||!Array.isArray(d.teamsData)||d.teamsData.length<60)return false;
+        const validTeams=d.teamsData.filter(t=>t&&t.id&&t.name&&Array.isArray(t.squad));
+        if(validTeams.length<60)return false;
+        teamsData.splice(0,teamsData.length,...validTeams);
+        managedTeamId=d.managedTeamId||null; nextPlayerId=d.nextPlayerId||nextPlayerId;
+        playerStats=d.playerStats||{};potsScores=d.potsScores||{};careerStats=d.careerStats||{};retiredPlayers=d.retiredPlayers||{};
+        playerTrophies=d.playerTrophies||{};clubAllTimeStats=d.clubAllTimeStats||{};currentSeason=d.currentSeason||1;
+        seasonHistory=d.seasonHistory||[];transferQueue=d.transferQueue||{offers:[],listings:[]};transferLog=d.transferLog||[];
+        autoManagerEnabled=!!d.autoManagerEnabled;favoritePlayers=new Set(d.favoritePlayers||[]);alwaysBestXI=!!d.alwaysBestXI;
+        competition=d.competition||null;viewStage=d.viewStage||null;tieCounter=d.tieCounter||1;
+        ensurePlayerMetadata();
+        // If we loaded the legacy v3 save, immediately upgrade it to v4.
+        if(!localStorage.getItem(SAVE_KEY)) savePersistentState();
+        return true;
+    }catch(e){console.warn('Save load failed',e);return false;}
+}
+function resetCareerSave(){
+    if(!confirm('Delete the entire UCL Manager save, including the permanent retired-player archive? This cannot be undone.'))return;
+    localStorage.removeItem(SAVE_KEY);location.reload();
+}
+function installSaveUI(){
+    const header=document.querySelector('header');
+    if(header&&!document.getElementById('autosave-pill')){
+        const pill=document.createElement('span');pill.id='autosave-pill';pill.className='autosave-pill';pill.textContent='Autosave ready';
+        const right=header.querySelector(':scope > div:last-child');
+        if(right)right.appendChild(pill);else header.appendChild(pill);
+    }
+    const searchPanel=document.getElementById('player-profile-panel');
+    if(searchPanel&&searchPanel.parentElement&&!document.getElementById('archive-tools')){
+        const tools=document.createElement('div');tools.id='archive-tools';tools.className='panel';tools.style.marginTop='18px';
+        tools.innerHTML='<h2>Save & Archive</h2><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;"><span id="archive-count" class="archive-badge retired">Permanent archive: 0 retired players</span><button class="btn btn-ghost btn-sm" onclick="savePersistentState()">Save Now</button><button class="btn btn-ghost btn-sm" onclick="resetCareerSave()">Reset Career Save</button></div><p style="font-size:.75rem;color:var(--text-muted);margin-bottom:0;">Retired players are copied into the permanent archive with their final OVR, age, club history and career UCL totals. They remain searchable after retirement.</p>';
+        searchPanel.parentElement.appendChild(tools);
+    }
+    const c=document.getElementById('archive-count');if(c)c.textContent=`Permanent archive: ${getAllArchivedPlayers().length} retired players`;
+}
+function getTeamBestOvr(team){return team&&team.squad.length?Math.max(...team.squad.map(p=>p.ovr||0)):0;}
+function realisticSeasonDevelopment(p,team){
+    const old=p.ovr||60;
+    if(p.peakAge===undefined){p.peakAge=randInt(25,30);p.peakUntil=p.peakAge+randInt(3,7);}
+    const age=p.age||20;
+    const potential=p.pot||old;
+    let delta=0;
+    // Development curve: teenagers/early 20s grow, prime players fluctuate, older players decline.
+    if(age<=21){delta=randInt(0,2);if(potential-old>3)delta+=Math.random()<0.45?1:0;}
+    else if(age<=24){delta=randInt(-1,2);if(potential-old>2&&Math.random()<0.7)delta+=1;}
+    else if(age<=28){delta=randInt(-1,1);}
+    else if(age<=31){delta=randInt(-2,1);}
+    else if(age<=34){delta=randInt(-2,0);}
+    else{delta=randInt(-3,0);}
+    // Seasonal form creates movement without turning the game into pure RNG.
+    const career=careerStats[p.id]||{};
+    const contribution=(career.goals||0)+(career.assists||0);
+    if(contribution>12&&Math.random()<0.35)delta+=1;
+    if(contribution===0&&age>24&&Math.random()<0.18)delta-=1;
+    delta=clampNum(delta,-3,3);
+    p.seasonForm=clampNum(50+randInt(-15,15)+delta*3,20,95);
+    // Apply change to a position-relevant attribute, occasionally a secondary one.
+    if(delta>0){
+        for(let i=0;i<delta;i++){const k=pickGrowthStat(p.pos,p);p[k]=Math.min(99,(p[k]||40)+1);}
+    }else if(delta<0){
+        for(let i=0;i<Math.abs(delta);i++){const k=pick(['pac','phy','sho','pas','dri','def']);p[k]=Math.max(35,(p[k]||40)-1);}
+    }
+    p.ovr=computeOvr(p);
+    if(team&&team.playerCeiling!==undefined)p.ovr=Math.min(team.playerCeiling,p.ovr);
+    p.pot=Math.max(p.ovr,Math.min(team&&team.playerCeiling!==undefined?team.playerCeiling:99,p.pot||p.ovr));
+    p.value=computePlayerValue(p,team);
+    if(!p.ovrHistory)p.ovrHistory=[];
+    p.ovrHistory.push({season:currentSeason,ovr:p.ovr});
+    if(p.ovrHistory.length>40)p.ovrHistory.shift();
+    return old!==p.ovr;
+}
+function enforceGeneratedClubCeiling(team){
+    if(!team||team.playerCeiling===undefined)return;
+    const ceiling=team.playerCeiling;
+    team.squad.forEach(p=>{
+        if(p.ovr>ceiling){
+            // Lower the strongest attribute(s) just enough to respect the club's realistic ceiling.
+            let guard=0;
+            while(computeOvr(p)>ceiling&&guard<100){
+                const stats=['pac','sho','pas','dri','def','phy'].sort((a,b)=>(p[b]||0)-(p[a]||0));
+                const k=stats[0];p[k]=Math.max(30,(p[k]||30)-1);guard++;
+            }
+            p.ovr=computeOvr(p);
+        }
+        p.pot=Math.min(ceiling,Math.max(p.pot||p.ovr,p.ovr));
+    });
+}
+// Replace the season-development/retirement pass with a deeper model and permanent archive.
+function processAgingAndRetirement(){
+    const retireLog=[];
+    teamsData.forEach(team=>{
+        if(team.id==='free_agents')return;
+        const survivors=[];
+        const beforeBest=getTeamBestOvr(team);
+        team.squad.forEach(p=>{
+            p.age=(p.age||18)+1;
+            if(!p.clubHistory)p.clubHistory=[team.name];
+            if(p.clubHistory[p.clubHistory.length-1]!==team.name)p.clubHistory.push(team.name);
+            realisticSeasonDevelopment(p,team);
+            const retireChance=p.age<34?0:clampNum((p.age-33)*0.035-(Math.max(0,p.ovr-76)*0.004),0,0.65);
+            if(Math.random()<retireChance){
+                archiveRetiredPlayer(p,team);
+                retireLog.push(`${p.name} (${team.name}, age ${p.age}) retired and was permanently archived.`);
+            }else survivors.push(p);
+        });
+        team.squad=survivors;
+        const targetBase=team.teamStrength||beforeBest||70;
+        const generationProfile=team.playerCeiling!==undefined?{ceiling:team.playerCeiling,floor:Math.max(58,(team.playerCeiling||targetBase)-12)}:undefined;
+        if(team.squad.length<22){
+            const missing=22-team.squad.length;
+            for(let i=0;i<missing;i++){
+                const np=generatePlayer(pick(SQUAD_TEMPLATE),Math.max(58,targetBase-3),true,0,generationProfile);
+                np.value=computePlayerValue(np,team);np.clubHistory=[team.name];np.ovrHistory=[{season:currentSeason,ovr:np.ovr}];
+                team.squad.push(np);
+            }
+        }
+        enforceGeneratedClubCeiling(team);
+        team.squad.forEach(p=>{p.value=computePlayerValue(p,team);});
+    });
+    retireLog.forEach(l=>transferLog.push(l));
+    ensurePlayerMetadata();
+    savePersistentState();
+}
+// Player database now searches live squads AND the permanent retired archive.
+function renderPlayerSearch(){
+    const search=((document.getElementById('ps-search')&&document.getElementById('ps-search').value)||'').trim().toLowerCase();
+    const status=(document.getElementById('ps-status')&&document.getElementById('ps-status').value)||'ALL';
+    const tbody=document.getElementById('player-search-table');
+    if(!tbody)return;
+    const current=[];
+    teamsData.forEach(team=>team.squad.forEach(p=>current.push({p,team,retired:false})));
+    const archived=getAllArchivedPlayers().map(p=>({p,team:null,retired:true}));
+    let all=[...current,...archived];
+    if(status==='CURRENT')all=all.filter(x=>!x.retired);
+    if(status==='RETIRED')all=all.filter(x=>x.retired);
+    if(!search){
+        document.getElementById('player-db-count').textContent=`${all.length.toLocaleString()} players available — type a name to search.`;
+        tbody.innerHTML='<tr><td colspan="7" style="color:var(--text-dim);">Type a player name to search the living database and permanent retired archive.</td></tr>';
+        const c=document.getElementById('archive-count');if(c)c.textContent=`Permanent archive: ${getAllArchivedPlayers().length} retired players`;
+        return;
+    }
+    const filtered=all.filter(({p})=>(p.name||'').toLowerCase().includes(search)).sort((a,b)=>(b.p.ovr||0)-(a.p.ovr||0)).slice(0,200);
+    document.getElementById('player-db-count').textContent=`${filtered.length} result${filtered.length===1?'':'s'}${all.length>200?' — showing top 200':''}`;
+    tbody.innerHTML=filtered.length?filtered.map(({p,team,retired})=>{
+        const club=retired?(p.lastClub||'Retired'):((team&&team.name)||'Unknown');
+        const statusHtml=retired?'<span class="archive-badge retired">RETIRED</span>':'<span class="archive-badge">ACTIVE</span>';
+        return `<tr><td>${p.name||'Unknown'}${p.isStar?'<span class="star-badge">★</span>':''}</td><td>${team?dot(team.color):'—'} ${club}</td><td>${p.pos||'—'}</td><td>${p.age||'—'}</td><td><span class="badge ${getValueClass(p.ovr||0)}">${p.ovr||0}</span>${cardTierBadge(p.ovr||0)}</td><td>${statusHtml}</td><td><button class="btn btn-sm btn-ghost" onclick="showPlayerProfile(${Number(p.id)},${retired})">View Profile</button></td></tr>`;
+    }).join(''):'<tr><td colspan="7" style="color:var(--text-dim);">No matching players found.</td></tr>';
+    const c=document.getElementById('archive-count');if(c)c.textContent=`Permanent archive: ${getAllArchivedPlayers().length} retired players`;
+}
+function showPlayerProfile(playerId,isRetired){
+    let foundPlayer=null,foundTeam=null;
+    teamsData.forEach(team=>{const p=team.squad.find(pl=>Number(pl.id)===Number(playerId));if(p){foundPlayer=p;foundTeam=team;}});
+    if(!foundPlayer)foundPlayer=retiredPlayers[playerId]||retiredPlayers[String(playerId)];
+    if(!foundPlayer)return;
+    const archived=!!(isRetired||retiredPlayers[playerId]||retiredPlayers[String(playerId)]);
+    const career=careerStats[playerId]||{goals:foundPlayer.careerGoals||0,assists:foundPlayer.careerAssists||0};
+    const panel=document.getElementById('player-profile-panel');if(!panel)return;
+    panel.style.display='block';
+    const clubName=archived?(foundPlayer.lastClub||'Retired'):((foundTeam&&foundTeam.name)||'Unknown');
+    const history=Array.isArray(foundPlayer.ovrHistory)?foundPlayer.ovrHistory:[];
+    const maxH=Math.max(1,...history.map(x=>x.ovr||0));
+    const bars=history.slice(-18).map(x=>`<span style="height:${Math.max(8,Math.round((x.ovr/maxH)*62))}px"><b>${x.ovr}</b></span>`).join('');
+    const clubHistory=(foundPlayer.clubHistory||[]).filter((v,i,a)=>v&&a.indexOf(v)===i).join(' → ')||clubName;
+    const recent=foundTeam?[...foundTeam.matchHistory].slice(-5).reverse():[];
+    const matchesHtml=recent.length?recent.map(m=>{const result=m.scoreFor>m.scoreAgainst?'Win':(m.scoreFor<m.scoreAgainst?'Loss':'Draw');const cls=result==='Win'?'high':(result==='Loss'?'low':'med');return `<div class="event-line">Season ${m.season}, ${m.round}: ${foundTeam.name} ${m.scoreFor} - ${m.scoreAgainst} ${m.opponent} <span class="badge ${cls}" style="margin-left:6px;">${result}</span></div>`;}).join(''):'<div class="event-line" style="color:var(--text-dim);">No recent club matches available.</div>';
+    const tier=getCardTier(foundPlayer.ovr||0);
+    panel.innerHTML=`<div class="tier-${tier.cls}" style="border-radius:var(--radius-lg);padding:16px;margin-bottom:14px;"><div style="display:flex;justify-content:space-between;align-items:flex-start;"><div><div style="font-size:2rem;font-weight:800;line-height:1;">${foundPlayer.ovr||0}</div><div style="font-size:.75rem;font-weight:700;letter-spacing:.04em;">${foundPlayer.pos||'—'}</div></div><span class="tier-badge tier-${tier.cls}" style="font-size:.68rem;">${archived?'RETIRED · '+(foundPlayer.retiredSeason||'?'):tier.label}</span></div><div style="font-size:1.15rem;font-weight:800;margin-top:8px;">${foundPlayer.name||'Unknown'}${foundPlayer.isStar?'<span class="star-badge">★ STAR</span>':''}</div><div style="font-size:.8rem;opacity:.85;margin-top:2px;">${clubName} · Age ${foundPlayer.age||'?'} · POT ${foundPlayer.pot||foundPlayer.ovr||0} · ${fmtMoney(foundPlayer.value||0)}</div></div>
+    <div class="filters-row" style="margin-top:10px;"><div class="pending-item" style="flex:1;justify-content:center;"><span>Career UCL Goals: <strong>${career.goals||0}</strong></span></div><div class="pending-item" style="flex:1;justify-content:center;"><span>Career UCL Assists: <strong>${career.assists||0}</strong></span></div></div>
+    <h2 style="margin-top:14px;">OVR Career History</h2><div class="player-history-bar" title="Most recent seasons are on the right">${bars||'<span style="height:10px"></span>'}</div><div style="font-size:.72rem;color:var(--text-muted);">${history.length?`Recorded across ${history.length} season${history.length===1?'':'s'}.`: 'No OVR history recorded yet.'}</div>
+    <h2 style="margin-top:14px;">Club History</h2><div class="event-line">${clubHistory}</div>
+    ${archived?`<div class="event-line" style="margin-top:8px;">Retired permanently in Season ${foundPlayer.retiredSeason||'?'} at age ${foundPlayer.retirementAge||foundPlayer.age||'?'}. This profile is kept in the archive indefinitely.</div>`:`<h2 style="margin-top:14px;">Last 5 Matches (${clubName})</h2>${matchesHtml}`}`;
+}
+// Keep player identities intact when they move clubs.
+function addClubToPlayerHistory(player,club){if(!player)return;if(!player.clubHistory)player.clubHistory=[];if(player.clubHistory[player.clubHistory.length-1]!==club.name)player.clubHistory.push(club.name);}
+const __originalProcessUserQueuedTransfers=processUserQueuedTransfers;
+processUserQueuedTransfers=function(){
+    __originalProcessUserQueuedTransfers();
+    const managed=getActiveTeam();
+    if(managed)managed.squad.forEach(p=>addClubToPlayerHistory(p,managed));
+    savePersistentState();
+};
+const __originalSellMarkedPlayers=sellMarkedPlayers;
+sellMarkedPlayers=function(){__originalSellMarkedPlayers();savePersistentState();};
+const __originalBeginNextSeason=beginNextSeason;
+beginNextSeason=function(){__originalBeginNextSeason();ensurePlayerMetadata();savePersistentState();};
+// More sensible AI formation behaviour: the best of all seven formations wins for every AI club.
+const __originalChooseTeam=chooseTeam;
+chooseTeam=function(id){
+    __originalChooseTeam(id);
+    const active=getActiveTeam();if(active){ensurePlayerMetadata();savePersistentState();}
+};
+// Autosave frequently and on page close. This also protects archives if the user closes the tab.
+const __originalInitApp=initApp;
+initApp=function(){
+    const loaded=loadPersistentState();
+    installSaveUI();
+    if(loaded&&managedTeamId&&getActiveTeam()){
+        document.getElementById('team-select-screen').style.display='none';
+        document.getElementById('main-app').style.display='block';
+        ensurePlayerMetadata();
+        if(!competition)startSeason();
+        loadTeamData();renderTournament();updateManagedStrip();renderLeaderboard();renderPlayerSearch();renderTransferMarket();
+        if(document.getElementById('always-best-xi-toggle'))document.getElementById('always-best-xi-toggle').checked=alwaysBestXI;
+    }else{
+        document.getElementById('team-select-screen').style.display='block';
+        document.getElementById('main-app').style.display='none';
+        renderTeamSelectScreen();
+    }
+    if(!saveTimer)saveTimer=setInterval(savePersistentState,3000);
+};
+window.addEventListener('beforeunload',savePersistentState);
+
+// Initialize the application after all data and functions are defined.
+initApp();
 </script>
 </body>
 </html>
